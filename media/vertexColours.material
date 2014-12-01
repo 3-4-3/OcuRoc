@@ -1,0 +1,150 @@
+vertex_program roculus3D/resort3d cg {
+	source projection3D.cg
+	entry_point main_vp
+	profiles vp40 vp20 vs_4_0 vs_2_0 arbvp1
+
+	default_params {
+		param_named_auto worldViewProj worldviewproj_matrix
+	}
+}
+
+fragment_program roculus3D/texture3d cg {
+	source projection3D.cg
+	entry_point main_fp
+	profiles fp40 fp20 ps_4_0 ps_2_0 arbfp1
+
+	default_params {
+		// find suitable steps (dx,dy) to test for depth changes
+		param_named invResolution float2 0.002f 0.002f
+		param_named sepia float 0.0f
+		param_named lim float 0.0003f
+	}
+}
+
+material roculus3D/DynamicTextureMaterial
+{
+	technique
+	{
+		pass
+		{
+			fragment_program_ref roculus3D/texture3d
+				{
+				}
+
+			vertex_program_ref roculus3D/resort3d 
+				{
+				}
+				
+			texture_unit 0 {
+				texture VideoRGBTexture
+				tex_coord_set 0
+				colour_op replace
+				filtering trilinear
+			}
+			
+			texture_unit 1 {
+				texture VideoDepthTexture
+				tex_coord_set 0
+				tex_address_mode mirror
+				filtering bilinear
+			}
+			
+			lighting off
+		}
+	}
+}
+
+material roculus3D/DynamicTextureMaterial2
+{
+	technique
+	{
+		pass
+		{
+			fragment_program_ref roculus3D/texture3d
+				{
+				}
+
+			vertex_program_ref roculus3D/resort3d 
+				{
+				}
+				
+			texture_unit 0 {
+				texture VideoRGBTexture2
+				tex_coord_set 0
+				colour_op replace
+				filtering trilinear
+			}
+			
+			texture_unit 1 {
+				texture VideoDepthTexture2
+				tex_coord_set 0
+				tex_address_mode mirror
+				filtering bilinear
+			}
+			
+			lighting off
+		}
+	}
+}
+
+material roculus3D/DynamicTextureMaterialSepia
+{
+	technique
+	{
+		pass
+		{
+			fragment_program_ref roculus3D/texture3d
+				{
+					param_named sepia float 1.0f
+				}
+
+			vertex_program_ref roculus3D/resort3d 
+				{
+				}
+				
+			texture_unit 0 {
+				texture VideoRGBTexture
+				tex_coord_set 0
+				colour_op replace
+				filtering trilinear
+			}
+			
+			texture_unit 1 {
+				texture VideoDepthTexture
+				tex_coord_set 0
+				tex_address_mode mirror
+				filtering bilinear
+			}
+			
+			lighting off
+		}
+	}
+}
+
+
+material roculus3D/BlankMaterial
+{
+	technique
+	{
+		pass
+		{
+			lighting off
+		}
+	}
+}
+
+material roculus3D/GlobalMapMaterial
+{
+	technique
+	{
+		pass
+		{
+			texture_unit {
+				texture GlobalMapTexture
+				tex_coord_set 0
+				filtering trilinear
+			}
+			lighting off
+		}
+	}
+}

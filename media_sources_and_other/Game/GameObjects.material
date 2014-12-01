@@ -1,0 +1,33 @@
+material roculus3d/Game_TreasureBox
+{
+    receive_shadows off
+    technique
+    {
+        pass
+        {
+			texture_unit {
+				texture Tex_TreasureBox.png
+				tex_coord_set 0
+			}
+			
+			lighting off
+        }
+    }
+}
+
+material roculus3d/Game_Key
+{
+    receive_shadows off
+    technique
+    {
+        pass
+        {
+	    	ambient 0.8 0.6 0.0 1.0
+      	  	diffuse 0.8 0.6 0.1 1.0
+       	 	specular 0.9 0.9 1.0 1.0 12.5
+       	 	emissive 0.9 0.75 0.0 1.0
+			
+	    	lighting off
+        }
+    }
+}

@@ -1,0 +1,61 @@
+# Using the OgreConfigFile standard
+
+# Define the Game using the parameters:
+# - initWP = The wayPoint, where the game should be started at (NOT a WPsUse node)
+# - cntKeys = the number of Keys in the game
+# - cntCorridors = How many corridor areas do you have? (areas where no KEYS, TREASURES and DOORS may be placed, always accessible)
+# - cntRooms = How many rooms are there? (rooms have a door, a door-event, a list of waypoints of which several should be ignored for the game)
+# - cntWayPoint = How many WayPoints are in the world?
+[Game]
+initWP = 18
+cntKeys = 1
+cntCorridors = 1
+cntRooms = 6
+cntWayPoints = 24
+
+# Define several corridors, the name has to be "CorridorXY", where XY is an increasing index
+# Each corridor has a number of WPs (WayPoints)
+[Corridor0]
+WPs = 0 7 6 2 8 1 11 13 14 17 20
+
+# Similar to corridors, but in addition to the WPs, you need to set:
+# - Make sure the numbers go from 0 to cntRooms-1
+# - WPs to use = each WP that may be used in the game as KEY or TREASURE, must NOT be empty
+# - Door = the WP that will be the door
+# - DoorEvt = the WP that is responsible to check the game state in order to open the door during the game
+# IMPORTANT: note that the DoorEvt must NOT be part of the room
+[Room0]
+WPs = 21 22
+WPs2Use = 22
+Door = 21
+DoorEvt = 20
+
+[Room1]
+WPs = 15 16
+WPs2Use = 16
+Door = 15
+DoorEvt = 14
+
+[Room2]
+WPs = 18 19
+WPs2Use = 19
+Door = 18
+DoorEvt = 17
+
+[Room3]
+WPs = 12 23
+WPs2Use = 12
+Door = 12
+DoorEvt = 11
+
+[Room4]
+WPs = 3 4 5
+WPs2Use = 4 5
+Door = 3
+DoorEvt = 2
+
+[Room5]
+WPs = 6 7
+WPs2Use = 7
+Door = 6
+DoorEvt = 2
