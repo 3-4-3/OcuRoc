@@ -194,8 +194,8 @@ void Roculus::createScene(void)
 	vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth2, pT_RGB2, false);	
 	
 	/* Good for debugging: add some coordinate systems */
-	//~ vdVideo->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
-	//~ mSceneMgr->getRootSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
+	 vdVideoRight->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
+	 mSceneMgr->getRootSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
 	
 	// PREallocate and manage memory to load/record snapshots
 	snLib = new SnapshotLibrary(mSceneMgr, Ogre::String("CamGeometry"), Ogre::String("roculus3D/DynamicTextureMaterialSepia"), 10);

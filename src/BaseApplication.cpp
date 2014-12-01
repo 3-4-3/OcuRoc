@@ -28,6 +28,11 @@ using namespace std;
 #if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
 #include <macUtils.h>
 #endif
+
+
+// TEST RELATIVE POS CAMERAS
+bool testAn(false);
+double changX(0),changY(0);
  
 //-------------------------------------------------------------------------------------
 BaseApplication::BaseApplication(void)
@@ -495,7 +500,8 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 	}
 	/* keys added for the GAME */
 	else if (arg.key == OIS::KC_SPACE) {
-		sendNavigationTarget();
+		//sendNavigationTarget();
+		testAn = !testAn;
 	} else if (arg.key == OIS::KC_I) {
 		
 		/* Code to reinitiate game with the robot driving the the initWP */
@@ -505,10 +511,20 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 		//~ rosieActionClient->cancelAllGoals();
 		//~ rosieActionClient->sendGoal(goal);
 		//~ LogManager::getSingletonPtr()->logMessage("Send2InitNode: " + goal.target);
-		
-		/* Reinitiate the GAME */
-		Game::getInstance().startGameSession();
-		escCounter = 0;
+		testAn = false;
+		changX = 0;
+		changY = 0;
+		/* Reinitiate the GAME */ 
+		//Game::getInstance().startGameSession();
+		//escCounter = 0; /// carlos
+	} else if (arg.key == OIS::KC_U) {
+		changY = changY +0.01;
+	} else if (arg.key == OIS::KC_J) {
+		changY = changY -0.01;
+	} else if (arg.key == OIS::KC_H) {
+		changX = changX - 0.01;
+	} else if (arg.key == OIS::KC_K) {
+		changX = changX + 0.01;
 	}
 
 	mPlayer->injectKeyDown(arg);
@@ -631,13 +647,19 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				//tfListener->lookupTransform("camera_left", "camera_left", depthImg->header.stamp, vdTransform);
 				tfListener->lookupTransform("camera_left", "camera_left", ros::Time(0), vdTransform);
 				// positioning
-				vdPosL.x = -vdTransform.getOrigin().y();
+				/*vdPosL.x = -vdTransform.getOrigin().y();
 				vdPosL.y = vdTransform.getOrigin().z();
-				vdPosL.z = -vdTransform.getOrigin().x();
+				vdPosL.z = -vdTransform.getOrigin().x();*/
+				vdPosL.x = -vdTransform.getOrigin().x();
+				vdPosL.y = vdTransform.getOrigin().y();
+				vdPosL.z = -vdTransform.getOrigin().z();
 				// rotation (at least get it into global coords that are fixed on the robot)
 				vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
-				mRot.FromEulerAnglesXYZ(-Radian(pitch),Radian(yaw),-Radian(roll));
+				mRot.FromEulerAnglesXYZ(Radian(roll),Radian(pitch),Radian(yaw));
 				vdOriL.FromRotationMatrix(mRot);
+				/*vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
+				mRot.FromEulerAnglesXYZ(-Radian(pitch),Radian(yaw),-Radian(roll));
+				vdOriL.FromRotationMatrix(mRot);*/
 
 				
 				/* connect the data to the images, note that this does in fact not load, but store pointers instead
@@ -647,6 +669,8 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				texVideoL.loadDynamicImage(static_cast<uchar*>(cv_rgb_l.data), cv_rgb_l.cols, cv_rgb_l.rows, 1, Ogre::PF_BYTE_RGB);
 				videoUpdateL = true;
 				std::cout << "UPDATE LEFT" << std::endl;
+				
+				std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
 			} else {
 				// We have to cut away the compression header to load the depth image into openCV
 			compressed_depth_image_transport::ConfigHeader compressionConfig;
@@ -672,13 +696,21 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 */
 				//tfListener->lookupTransform("camera_left", "camera_right", depthImg->header.stamp, vdTransform);
 				tfListener->lookupTransform("camera_left", "camera_right", ros::Time(0), vdTransform);
-				// positioning
-				vdPosR.x = -vdTransform.getOrigin().y();
-				vdPosR.y = vdTransform.getOrigin().z();
-				vdPosR.z = -vdTransform.getOrigin().x();
+				// positioning 
+				/*
+				vdPosR.x = -vdTransform.getOrigin().x();
+				vdPosR.y = vdTransform.getOrigin().y();
+				vdPosR.z = vdTransform.getOrigin().z();*/
+				vdPosR.x = changX;
+				vdPosR.y = vdTransform.getOrigin().y();
+				vdPosR.z = changY;
 				// rotation (at least get it into global coords that are fixed on the robot)
 				vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
-				mRot.FromEulerAnglesXYZ(-Radian(pitch),Radian(yaw),-Radian(roll));
+				
+				if(!testAn)
+				mRot.FromEulerAnglesXYZ(Radian(roll),Radian(pitch),-Radian(yaw));
+				else
+				mRot.FromEulerAnglesXYZ(-Radian(roll),Radian(pitch),Radian(yaw));
 				vdOriR.FromRotationMatrix(mRot);
 
 				/* connect the data to the images, note that this does in fact not load, but store pointers instead
@@ -688,6 +720,8 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				texVideoR.loadDynamicImage(static_cast<uchar*>(cv_rgb_r.data), cv_rgb_r.cols, cv_rgb_r.rows, 1, Ogre::PF_BYTE_RGB);
 				videoUpdateR = true;
 				std::cout << "UPDATE RIGHT" << std::endl;
+				std::cout << " vdPosR.x " << vdPosR.x << " vdPosR.y " << vdPosR.y <<  " vdPosR.z " << vdPosR.z<< std::endl;
+				std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
 			}
 			
 			
