@@ -32,7 +32,7 @@ using namespace std;
 
 // TEST RELATIVE POS CAMERAS
 bool testAn(false);
-double changX(0),changY(0);
+double changX(0),changY(0),changZ(0);
  
 //-------------------------------------------------------------------------------------
 BaseApplication::BaseApplication(void)
@@ -403,7 +403,7 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 
 
 // --- carlos
-//	robotModel->updateFrom(tfListener); // Update the robot's position and orientation
+	robotModel->updateFrom(tfListener); // Update the robot's position and orientation
 	
 	if (mPlayer->isFirstPerson()) {
 		mPlayer->frameRenderingQueued(robotModel);  // first-person mode will mout the player on top of the robot
@@ -514,6 +514,7 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 		testAn = false;
 		changX = 0;
 		changY = 0;
+		changZ=0;
 		/* Reinitiate the GAME */ 
 		//Game::getInstance().startGameSession();
 		//escCounter = 0; /// carlos
@@ -525,6 +526,10 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 		changX = changX - 0.01;
 	} else if (arg.key == OIS::KC_K) {
 		changX = changX + 0.01;
+	} else if (arg.key == OIS::KC_Y) {
+		changZ = changZ + 0.01;
+	} else if (arg.key == OIS::KC_T) {
+		changZ = changZ - 0.01;
 	}
 
 	mPlayer->injectKeyDown(arg);
@@ -697,19 +702,20 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				//tfListener->lookupTransform("camera_left", "camera_right", depthImg->header.stamp, vdTransform);
 				tfListener->lookupTransform("camera_left", "camera_right", ros::Time(0), vdTransform);
 				// positioning 
-				/*
+				if(!testAn){
 				vdPosR.x = -vdTransform.getOrigin().x();
-				vdPosR.y = vdTransform.getOrigin().y();
-				vdPosR.z = vdTransform.getOrigin().z();*/
+				vdPosR.y = -vdTransform.getOrigin().y();
+				vdPosR.z = vdTransform.getOrigin().z();
+				}else{
 				vdPosR.x = changX;
-				vdPosR.y = vdTransform.getOrigin().y();
-				vdPosR.z = changY;
+				vdPosR.y = changY;
+				vdPosR.z = changZ;}
 				// rotation (at least get it into global coords that are fixed on the robot)
 				vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
 				
-				if(!testAn)
-				mRot.FromEulerAnglesXYZ(Radian(roll),Radian(pitch),-Radian(yaw));
-				else
+				//if(!testAn)
+				//mRot.FromEulerAnglesXYZ(-Radian(roll),Radian(pitch),Radian(yaw));
+				//else
 				mRot.FromEulerAnglesXYZ(-Radian(roll),Radian(pitch),Radian(yaw));
 				vdOriR.FromRotationMatrix(mRot);
 

@@ -50,7 +50,7 @@ void Roculus::createScene(void)
 		Ogre::TEX_TYPE_2D,      // type
 		640, 480,         		// width & height
 		0,                		// number of mipmaps
-		Ogre::PF_BYTE_RGB,     // pixel format
+		Ogre::PF_BYTE_RGB,      // pixel format
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);  //TU_DYNAMIC_WRITE_ONLY_DISCARDABLE
 		
 	Ogre::TexturePtr pT_Depth = Ogre::TextureManager::getSingleton().createManual(
@@ -59,7 +59,7 @@ void Roculus::createScene(void)
 		Ogre::TEX_TYPE_2D,      // type
 		640, 480,         		// width & height
 		0,                		// number of mipmaps
-		Ogre::PF_L16,     // pixel format
+		Ogre::PF_L16,     		// pixel format
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE); 
 		
 	// 2nd CAMERA (RIGHT)
@@ -70,7 +70,7 @@ void Roculus::createScene(void)
 		Ogre::TEX_TYPE_2D,      // type
 		640, 480,         		// width & height
 		0,                		// number of mipmaps
-		Ogre::PF_BYTE_RGB,     // pixel format
+		Ogre::PF_BYTE_RGB,     	// pixel format
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);  //TU_DYNAMIC_WRITE_ONLY_DISCARDABLE
 		
 	Ogre::TexturePtr pT_Depth2 = Ogre::TextureManager::getSingleton().createManual(
@@ -79,7 +79,7 @@ void Roculus::createScene(void)
 		Ogre::TEX_TYPE_2D,      // type
 		640, 480,         		// width & height
 		0,                		// number of mipmaps
-		Ogre::PF_L16,     // pixel format
+		Ogre::PF_L16,     		// pixel format
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE); 
 	
 	// Texture to hold the map image
@@ -87,7 +87,7 @@ void Roculus::createScene(void)
 		"GlobalMapTexture", 				// name
 		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
 		Ogre::TEX_TYPE_2D,      // type
-		1024, 1024,         		// width & height
+		1024, 1024,         	// width & height
 		0,                		// number of mipmaps
 		Ogre::PF_BYTE_RGBA,     // pixel format
 		Ogre::TU_STATIC);
