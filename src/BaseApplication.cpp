@@ -650,7 +650,7 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 *  in order to end up in the correct orientation...
 			 */
 				//tfListener->lookupTransform("camera_left", "camera_left", depthImg->header.stamp, vdTransform);
-				tfListener->lookupTransform("camera_left", "camera_left", ros::Time(0), vdTransform);
+				tfListener->lookupTransform("global", "camera_left", ros::Time(0), vdTransform);
 				// positioning
 				/*vdPosL.x = -vdTransform.getOrigin().y();
 				vdPosL.y = vdTransform.getOrigin().z();
@@ -660,8 +660,17 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				vdPosL.z = -vdTransform.getOrigin().z();
 				// rotation (at least get it into global coords that are fixed on the robot)
 				vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
-				mRot.FromEulerAnglesXYZ(Radian(roll),Radian(pitch),Radian(yaw));
+				
+				if(!testAn)
+				mRot.FromEulerAnglesXYZ(Radian(roll),Radian(0),Radian(pitch));
+				else 
+				mRot.FromEulerAnglesXYZ(Radian(roll),-Radian(0),Radian(pitch));
+				
+				Quaternion qYn90 = Quaternion(Degree(90), Vector3::UNIT_X);
+				
 				vdOriL.FromRotationMatrix(mRot);
+				//vdOriL = vdOriL* qYn90;
+				
 				/*vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
 				mRot.FromEulerAnglesXYZ(-Radian(pitch),Radian(yaw),-Radian(roll));
 				vdOriL.FromRotationMatrix(mRot);*/
@@ -700,7 +709,7 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 *  in order to end up in the correct orientation...
 			 */
 				//tfListener->lookupTransform("camera_left", "camera_right", depthImg->header.stamp, vdTransform);
-				tfListener->lookupTransform("camera_left", "camera_right", ros::Time(0), vdTransform);
+				tfListener->lookupTransform("global", "camera_right", ros::Time(0), vdTransform);
 				// positioning 
 				if(!testAn){
 				vdPosR.x = -vdTransform.getOrigin().x();
