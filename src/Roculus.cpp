@@ -190,11 +190,16 @@ void Roculus::createScene(void)
 	cursor->attachObject(wpMarker);
 	
 	// set up the node for the video stream
-	vdVideoLeft = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth, pT_RGB, true);	
-	vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth2, pT_RGB2, false);	
+	// The right video node is child of the left
+	Ogre::SceneNode *pSceneNodeL = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	vdVideoLeft = new Video3D(mSceneMgr->createEntity("CamGeometry"), pSceneNodeL, pT_Depth, pT_RGB, true);	
+	vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), pSceneNodeL->createChildSceneNode(), pT_Depth2, pT_RGB2, false);	
+	
+	//	vdVideoLeft = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth, pT_RGB, true);	
+	//  vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth2, pT_RGB2, false);
 	
 	/* Good for debugging: add some coordinate systems */
-	 vdVideoRight->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
+	 vdVideoLeft->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
 	 mSceneMgr->getRootSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
 	
 	// PREallocate and manage memory to load/record snapshots

@@ -418,6 +418,12 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 		mDetailsPanel->setParamValue(2, Ogre::StringConverter::toString(oculus->getCameraNode()->_getDerivedPosition().z));
 		mDetailsPanel->setParamValue(6, boost::lexical_cast<std::string>(closestWP));
 		mDetailsPanel->setParamValue(7, Game::getInstance().getState());
+		
+		/**double yaw,pitch,roll;	debug yaw
+		tf::StampedTransform baseTF;
+		tfListener->lookupTransform("global","marker",ros::Time(0), baseTF); //////////////////// carlos
+		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);
+		mDetailsPanel->setParamValue(7, Ogre::StringConverter::toString(yaw));*/
 	}
 
 	// update the oculus orientation
@@ -650,26 +656,21 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 *  in order to end up in the correct orientation...
 			 */
 				//tfListener->lookupTransform("camera_left", "camera_left", depthImg->header.stamp, vdTransform);
-				tfListener->lookupTransform("global", "camera_left", ros::Time(0), vdTransform);
+				tfListener->lookupTransform("map", "camera_left", ros::Time(0), vdTransform);
 				// positioning
-				/*vdPosL.x = -vdTransform.getOrigin().y();
-				vdPosL.y = vdTransform.getOrigin().z();
-				vdPosL.z = -vdTransform.getOrigin().x();*/
+				
 				vdPosL.x = -vdTransform.getOrigin().x();
-				vdPosL.y = vdTransform.getOrigin().y();
+				vdPosL.y = -vdTransform.getOrigin().y();
 				vdPosL.z = -vdTransform.getOrigin().z();
-				// rotation (at least get it into global coords that are fixed on the robot)
-				vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
 				
-				if(!testAn)
-				mRot.FromEulerAnglesXYZ(Radian(roll),Radian(0),Radian(pitch));
-				else 
-				mRot.FromEulerAnglesXYZ(Radian(roll),-Radian(0),Radian(pitch));
 				
-				Quaternion qYn90 = Quaternion(Degree(90), Vector3::UNIT_X);
+				// rotation 
+				tf::Matrix3x3 tfMat(vdTransform.getBasis());
+				tf::Vector3 row0(tfMat.getRow(0)), row1(tfMat.getRow(1)), row2(tfMat.getRow(2));
+				Matrix3 rot(row0.x(),row0.y(),row0.z(),row1.x(),row1.y(),row1.z(),row2.x(),row2.y(),row2.z());
+				Quaternion quat(rot);
 				
-				vdOriL.FromRotationMatrix(mRot);
-				//vdOriL = vdOriL* qYn90;
+				vdOriL = quat;
 				
 				/*vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
 				mRot.FromEulerAnglesXYZ(-Radian(pitch),Radian(yaw),-Radian(roll));
@@ -683,7 +684,7 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				texVideoL.loadDynamicImage(static_cast<uchar*>(cv_rgb_l.data), cv_rgb_l.cols, cv_rgb_l.rows, 1, Ogre::PF_BYTE_RGB);
 				videoUpdateL = true;
 				std::cout << "UPDATE LEFT" << std::endl;
-				
+				std::cout << " vdPosR.x " << vdPosR.x << " vdPosR.y " << vdPosR.y <<  " vdPosR.z " << vdPosR.z<< std::endl;
 				std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
 			} else {
 				// We have to cut away the compression header to load the depth image into openCV
@@ -709,7 +710,7 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 *  in order to end up in the correct orientation...
 			 */
 				//tfListener->lookupTransform("camera_left", "camera_right", depthImg->header.stamp, vdTransform);
-				tfListener->lookupTransform("global", "camera_right", ros::Time(0), vdTransform);
+				tfListener->lookupTransform("camera_left", "camera_right", ros::Time(0), vdTransform);
 				// positioning 
 				if(!testAn){
 				vdPosR.x = -vdTransform.getOrigin().x();
@@ -735,7 +736,7 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				texVideoR.loadDynamicImage(static_cast<uchar*>(cv_rgb_r.data), cv_rgb_r.cols, cv_rgb_r.rows, 1, Ogre::PF_BYTE_RGB);
 				videoUpdateR = true;
 				std::cout << "UPDATE RIGHT" << std::endl;
-				std::cout << " vdPosR.x " << vdPosR.x << " vdPosR.y " << vdPosR.y <<  " vdPosR.z " << vdPosR.z<< std::endl;
+				
 				std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
 			}
 			

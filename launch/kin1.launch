@@ -12,7 +12,7 @@
 		<remap from="ir" to="camera1/ir/image_raw" />
 		<remap from="camera/depth_registered" to="camera1/depth_registered" />
 
- 		<param name="rgb_frame_id" value="kinect1_rgb_frame" />
+ 		<param name="rgb_frame_id" value="camera_left" />
     		<param name="depth_frame_id" value="kinect1_depth_frame" />
 
    		

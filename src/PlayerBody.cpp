@@ -1,6 +1,8 @@
 #include "PlayerBody.h"
 double integrated_turn = 0;
 
+# define HEIGHT_FROM_FLOOR  0.3 /*0.7*/
+
 PlayerBody::PlayerBody(Ogre::SceneNode* mStereoCameraParent)
   : position(Ogre::Vector3::ZERO),
     velo(Ogre::Vector3::UNIT_SCALE*1.0),
@@ -141,7 +143,7 @@ void PlayerBody::frameRenderingQueued(Robot *robot) {
 	static Ogre::Quaternion lOffset(Ogre::Degree(-160), Ogre::Vector3::UNIT_Y);
 	static Ogre::Quaternion rOffset(Ogre::Degree(160), Ogre::Vector3::UNIT_Y);
 	
-	mStereoCameraParent->setPosition(Ogre::Vector3::UNIT_Y*0.7+robot->getSceneNode()->getPosition());
+	mStereoCameraParent->setPosition(Ogre::Vector3::UNIT_Y*HEIGHT_FROM_FLOOR+robot->getSceneNode()->getPosition());
     /*if (offset > 0) {
 		mStereoCameraParent->setOrientation(rOffset*qRot*robot->getSceneNode()->getOrientation());
 	} else if (offset < 0) {

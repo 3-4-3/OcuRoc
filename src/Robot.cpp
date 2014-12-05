@@ -27,7 +27,8 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 	
 	// get the latest robot position and orientation, transform them to Ogre and update the scene node	
 	try {
-		tfListener->lookupTransform("camera_left","marker",ros::Time(0), baseTF); //////////////////// carlos
+		//tfListener->lookupTransform("camera_left","marker",ros::Time(0), baseTF); //////////////////// carlos
+		tfListener->lookupTransform("map","marker",ros::Time(0), baseTF); //////////////////// carlos
 		
 		/*translation.x = -baseTF.getOrigin().y();
 		translation.y = baseTF.getOrigin().z();
@@ -39,6 +40,26 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 		orientation = qYn90*orientation;*/
 		
 		// positioning
+				
+		translation.x = -baseTF.getOrigin().x(); // Depending global angle  
+		translation.y = -baseTF.getOrigin().y();
+		translation.z = -baseTF.getOrigin().z();
+				
+		// rotation between both markers
+		tfListener->lookupTransform("mean_global","marker",ros::Time(0), baseTF); //////////////////// carlos
+		 
+		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);
+		mRot.FromEulerAnglesYXZ(Radian(yaw),Radian(0.0f),Radian(0.0f));
+		orientation.FromRotationMatrix(mRot);
+		
+		robot->setPosition(translation);
+        robot->setOrientation(orientation);
+        
+        
+        std::cout << " ROBOT roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
+        
+		/**
+		// positioning
 		translation.x = baseTF.getOrigin().x();
 		translation.y = -baseTF.getOrigin().y();
 		translation.z = -baseTF.getOrigin().z();
@@ -48,7 +69,7 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 		orientation.FromRotationMatrix(mRot);
 		
 		robot->setPosition(translation);
-        robot->setOrientation(orientation);
+        robot->setOrientation(orientation);*/
 		
 	} catch (tf::TransformException ex){
 		ROS_ERROR("%s",ex.what());
