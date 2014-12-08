@@ -11,7 +11,7 @@
  */
 class Robot {
 public:
-	Robot(Ogre::SceneManager*);
+	Robot(Ogre::SceneManager*, Ogre::SceneNode*);
 	/**< Set up the avatar and prepare the scene.*/
 	~Robot();
 	/**< Default destructor.*/

@@ -193,10 +193,13 @@ void Roculus::createScene(void)
 	// The right video node is child of the left
 	Ogre::SceneNode *pSceneNodeL = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	vdVideoLeft = new Video3D(mSceneMgr->createEntity("CamGeometry"), pSceneNodeL, pT_Depth, pT_RGB, true);	
-	vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), pSceneNodeL->createChildSceneNode(), pT_Depth2, pT_RGB2, false);	
+	//vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), pSceneNodeL->createChildSceneNode(), pT_Depth2, pT_RGB2, false);
+	
+	// creating Robot for pose
+	robotModel = new Robot(mSceneMgr, pSceneNodeL->createChildSceneNode());	
 	
 	//	vdVideoLeft = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth, pT_RGB, true);	
-	//  vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth2, pT_RGB2, false);
+	  vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth2, pT_RGB2, false);
 	
 	/* Good for debugging: add some coordinate systems */
 	 vdVideoLeft->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));

@@ -70,6 +70,7 @@ This source file is part of the
 #include "Robot.h"
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>			// Input handling
+#include <std_msgs/Float32.h>		// Output message
 #include <sensor_msgs/CompressedImage.h>// Image and Video streams
 #include <nav_msgs/OccupancyGrid.h>		// GlobalMap
 #include <message_filters/subscriber.h>	// Sychronized Message Handling
@@ -228,7 +229,7 @@ protected:
 					*hRosSubMap,			/**< Subscriber for the map topic. */
 					*hRosSubNodes,			/**< Subscriber for the waypoints. */
 					*hRosSubCloseWP;		/**< Subscriber for the closest/actual waypoint. */
-
+    ros::Publisher  *hRosPubAngle;			/**< Publisher for the angle of the robot		*/
 
 
 
@@ -236,7 +237,8 @@ protected:
 																*hRosSubDepth,		/**< Message filtering to be able to synchronize the image streams. */
 																*hRosSubRGBVidL, *hRosSubRGBVidR,		/**< Message filtering to be able to synchronize the image streams. */
 																*hRosSubDepthVidL, *hRosSubDepthVidR;	/**< Message filtering to be able to synchronize the image streams. */
-	message_filters::Synchronizer<ApproximateTimePolicy> *rosMsgSync,		/**< Synchronization of the room sweep images. */								*rosVideoSyncL, *rosVideoSyncR;		/**< Synchronization of the video image streams. */
+	message_filters::Synchronizer<ApproximateTimePolicy> *rosMsgSync,		/**< Synchronization of the room sweep images. */								
+															*rosVideoSyncL, *rosVideoSyncR;		/**< Synchronization of the video image streams. */
 	tf::TransformListener *tfListener;		/**< Keeps track of all coordinate frames. Enables application to compute arbitrary transformations between ROS coordinate frames (see frames.pdf). */
 	Robot *robotModel;						/**< Display and manage the robot avatar. */
 	GlobalMap *globalMap;					/**< Display and manage the global map. */

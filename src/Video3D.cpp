@@ -8,7 +8,8 @@ Video3D::Video3D(Ogre::Entity *pSnapshot, Ogre::SceneNode *pSceneNode, const Ogr
 	// basically remember these things for later
 	this->snapshot = pSnapshot;
 	this->targetSceneNode = pSceneNode;
-	this->targetSceneNode->setInheritOrientation(false);
+	if(is_left)  // carlos
+	this->targetSceneNode->setInheritOrientation(false); 
 	this->depthTexture = depthTexture;
 	this->rgbTexture = rgbTexture;
 	this->attached = false;

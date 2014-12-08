@@ -143,7 +143,10 @@ void PlayerBody::frameRenderingQueued(Robot *robot) {
 	static Ogre::Quaternion lOffset(Ogre::Degree(-160), Ogre::Vector3::UNIT_Y);
 	static Ogre::Quaternion rOffset(Ogre::Degree(160), Ogre::Vector3::UNIT_Y);
 	
-	mStereoCameraParent->setPosition(Ogre::Vector3::UNIT_Y*HEIGHT_FROM_FLOOR+robot->getSceneNode()->getPosition());
+	//mStereoCameraParent->setPosition(Ogre::Vector3::UNIT_Y*HEIGHT_FROM_FLOOR+robot->getSceneNode()->getPosition());
+	mStereoCameraParent->setPosition(Ogre::Vector3::UNIT_Y*HEIGHT_FROM_FLOOR+robot->getSceneNode()->_getDerivedPosition()
+											);
+    
     /*if (offset > 0) {
 		mStereoCameraParent->setOrientation(rOffset*qRot*robot->getSceneNode()->getOrientation());
 	} else if (offset < 0) {

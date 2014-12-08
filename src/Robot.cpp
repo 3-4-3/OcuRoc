@@ -4,9 +4,10 @@
 #include <OgreEntity.h>
 #include <tf/transform_datatypes.h>
 
-Robot::Robot(Ogre::SceneManager *mSceneMgr) {
+Robot::Robot(Ogre::SceneManager *mSceneMgr, Ogre::SceneNode *pSceneNode) {
 	// set everything up for display
-	robot = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	//robot = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	robot = pSceneNode;
 	robot->setPosition(Ogre::Vector3(0.0f, 1.0f, 0.0f));
 	//robot->attachObject(mSceneMgr->createEntity("Rosie.mesh"));
 	/* Good for debugging: add some coordinate systems */
@@ -27,8 +28,8 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 	
 	// get the latest robot position and orientation, transform them to Ogre and update the scene node	
 	try {
-		//tfListener->lookupTransform("camera_left","marker",ros::Time(0), baseTF); //////////////////// carlos
-		tfListener->lookupTransform("map","marker",ros::Time(0), baseTF); //////////////////// carlos
+		tfListener->lookupTransform("camera_left","marker",ros::Time(0), baseTF); //////////////////// carlos
+		//tfListener->lookupTransform("map","marker",ros::Time(0), baseTF); //////////////////// carlos
 		
 		/*translation.x = -baseTF.getOrigin().y();
 		translation.y = baseTF.getOrigin().z();
@@ -39,7 +40,22 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 		orientation.FromRotationMatrix(mRot);
 		orientation = qYn90*orientation;*/
 		
+		
 		// positioning
+		translation.x = baseTF.getOrigin().x();
+		translation.y = -baseTF.getOrigin().y();
+		translation.z = -baseTF.getOrigin().z();
+		// rotation (at least get it into global coords that are fixed on the robot)
+		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);
+		mRot.FromEulerAnglesYXZ(Radian(yaw),Radian(0.0f),Radian(0.0f));
+		orientation.FromRotationMatrix(mRot);
+		
+		robot->setPosition(translation);
+        robot->setOrientation(orientation);
+        
+        
+        
+		/** // positioning
 				
 		translation.x = -baseTF.getOrigin().x(); // Depending global angle  
 		translation.y = -baseTF.getOrigin().y();
@@ -53,23 +69,12 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 		orientation.FromRotationMatrix(mRot);
 		
 		robot->setPosition(translation);
-        robot->setOrientation(orientation);
+        robot->setOrientation(orientation); */
         
         
         std::cout << " ROBOT roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
         
-		/**
-		// positioning
-		translation.x = baseTF.getOrigin().x();
-		translation.y = -baseTF.getOrigin().y();
-		translation.z = -baseTF.getOrigin().z();
-		// rotation (at least get it into global coords that are fixed on the robot)
-		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);
-		mRot.FromEulerAnglesXYZ(Radian(roll),Radian(pitch),Radian(yaw));
-		orientation.FromRotationMatrix(mRot);
 		
-		robot->setPosition(translation);
-        robot->setOrientation(orientation);*/
 		
 	} catch (tf::TransformException ex){
 		ROS_ERROR("%s",ex.what());

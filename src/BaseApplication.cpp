@@ -328,7 +328,7 @@ bool BaseApplication::setup(void)
 	// set up the components from the master thesis application
 	// (wow, that really was some low level of coding I did there...)
 	mPlayer = new PlayerBody(mPlayerBodyNode);
-	robotModel = new Robot(mSceneMgr);
+	//robotModel = new Robot(mSceneMgr); moving to Roculus CreateScene
 	globalMap = new GlobalMap(mSceneMgr);
 	
 	// configure the ROS setup
@@ -428,6 +428,15 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 
 	// update the oculus orientation
 	oculus->update();
+	
+	// Publish the angle that has the view compared to the robot 
+	std_msgs::Float32 angle;
+	
+	float angle_f = (oculus->getOrientation().getYaw() + mPlayerBodyNode->getOrientation().getYaw() - robotModel->getSceneNode()->getOrientation().getYaw())
+									.valueRadians();
+	angle.data = angle_f;
+	
+	hRosPubAngle->publish(angle);
 
 	// for game navigation:
 	// 1st: update the cursor
@@ -887,7 +896,8 @@ void BaseApplication::initROS() {
   ros::init(argc, argv, "roculus");
   hRosNode = new ros::NodeHandle();
 
-
+  /* Publish the angle of the robot */
+  hRosPubAngle = new ros::Publisher(hRosNode->advertise<std_msgs::Float32>("angle", 5));
   
   /* Subscribe to the joystick input */
   hRosSubJoy = new ros::Subscriber(hRosNode->subscribe<sensor_msgs::Joy>
