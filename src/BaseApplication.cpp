@@ -36,7 +36,8 @@ double changX(0),changY(0),changZ(0);
  
 //-------------------------------------------------------------------------------------
 BaseApplication::BaseApplication(void)
-	: mRoot(0),
+	: moving(false),
+	  mRoot(0),
 	  mSceneMgr(0),
 	  mWindow(0),
 	  mResourcesCfg(Ogre::StringUtil::BLANK),
@@ -57,8 +58,6 @@ BaseApplication::BaseApplication(void)
 	  videoUpdateL(false),
 	  videoUpdateR(false),
 	  mapArrived(false),
-	  receivedWPs(false),
-	  closestWP(-1),
 	  snPos(Ogre::Vector3::ZERO),
 	  snOri(Ogre::Quaternion::IDENTITY),
 	  vdPosL(Ogre::Vector3::ZERO),
@@ -69,15 +68,10 @@ BaseApplication::BaseApplication(void)
 	  hRosSubMap(NULL),
 	  hRosSubRGB(NULL),
 	  hRosSubDepth(NULL),
-	  hRosSubNodes(NULL),
-	  hRosSubCloseWP(NULL),
 	  rosMsgSync(NULL),
 	  rosPTUClient(NULL),
 	  ptuSweep(NULL),
-	  globalMap(NULL),
-	  rosieActionClient(NULL),
-	  targetWPName(Ogre::StringUtil::BLANK),
-	  selectedWP(NULL)
+	  globalMap(NULL)
 {
 #if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
     m_ResourcePath = Ogre::macBundlePath() + "/Contents/Resources/";
@@ -176,7 +170,7 @@ void BaseApplication::createFrameListener(void)
 	items.push_back("");
 	items.push_back("Filtering");
 	items.push_back("Poly Mode");
-	items.push_back("closestWP");
+	items.push_back("Yaw");
 	items.push_back("GameState");
  
 	mDetailsPanel = mTrayMgr->createParamsPanel(OgreBites::TL_NONE, "DetailsPanel", 250, items);
@@ -316,7 +310,6 @@ bool BaseApplication::setup(void)
  	createFrameListener();
 
 	// initialize the GAME (singleton pattern)
-	Game::getInstance().init(mSceneMgr);
 	
 	// get a SceneNode for the PlayerBody
 	mPlayerBodyNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("PlayerBodyNode");
@@ -406,40 +399,53 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 	robotModel->updateFrom(tfListener); // Update the robot's position and orientation
 	
 	if (mPlayer->isFirstPerson()) {
-		mPlayer->frameRenderingQueued(robotModel);  // first-person mode will mout the player on top of the robot
+		mPlayer->frameRenderingQueued(robotModel, moving);  // first-person mode will mout the player on top of the robot
 	} else {
 		mPlayer->frameRenderingQueued(evt); // Apply player(~body) movement, if not in first-person
 	}
 
-	// update the panel information
-	if (mDetailsPanel->isVisible()) {
-		mDetailsPanel->setParamValue(0, Ogre::StringConverter::toString(oculus->getCameraNode()->_getDerivedPosition().x));
-		mDetailsPanel->setParamValue(1, Ogre::StringConverter::toString(oculus->getCameraNode()->_getDerivedPosition().y));
-		mDetailsPanel->setParamValue(2, Ogre::StringConverter::toString(oculus->getCameraNode()->_getDerivedPosition().z));
-		mDetailsPanel->setParamValue(6, boost::lexical_cast<std::string>(closestWP));
-		mDetailsPanel->setParamValue(7, Game::getInstance().getState());
-		
-		/**double yaw,pitch,roll;	debug yaw
-		tf::StampedTransform baseTF;
-		tfListener->lookupTransform("global","marker",ros::Time(0), baseTF); //////////////////// carlos
-		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);
-		mDetailsPanel->setParamValue(7, Ogre::StringConverter::toString(yaw));*/
-	}
+	
 
 	// update the oculus orientation
 	oculus->update();
 	
 	// Publish the angle that has the view compared to the robot 
 	std_msgs::Float32 angle;
-	
 	float angle_f = (oculus->getOrientation().getYaw() + mPlayerBodyNode->getOrientation().getYaw() - robotModel->getSceneNode()->getOrientation().getYaw())
 									.valueRadians();
 	angle.data = angle_f;
-	
 	hRosPubAngle->publish(angle);
+	
+	
+	
+	// update the panel information
+	if (mDetailsPanel->isVisible()) {
+		mDetailsPanel->setParamValue(0, Ogre::StringConverter::toString(oculus->getCameraNode()->_getDerivedPosition().x));
+		mDetailsPanel->setParamValue(1, Ogre::StringConverter::toString(oculus->getCameraNode()->_getDerivedPosition().y));
+		mDetailsPanel->setParamValue(2, Ogre::StringConverter::toString(oculus->getCameraNode()->_getDerivedPosition().z));
+		
+		try {
+		double yaw,pitch,roll;	// debug yaw  //
+		tf::StampedTransform baseTF;
+		tfListener->lookupTransform("global","marker",ros::Time(0), baseTF); //////////////////// carlos
+		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);
+		mDetailsPanel->setParamValue(6, Ogre::StringConverter::toString(yaw));
+		} catch (tf::TransformException ex){
+		ROS_ERROR("%s",ex.what());
+		}
+		
+		mDetailsPanel->setParamValue(7, Ogre::StringConverter::toString(angle_f));
+	}
+	
+	// FLC orders, in case we are in 1st person
+	if (mPlayer->isFirstPerson()) {
+		
+		
+		
+	}
 
-	// for game navigation:
-	// 1st: update the cursor
+	// for game navigation: NOT NEEDED ANYMORE
+	//  update the cursor
 	Ogre::Vector3 pos(mPlayerBodyNode->getPosition()+Ogre::Vector3::UNIT_Y*0.7);
 	Ogre::Quaternion qView = Ogre::Quaternion(mPlayerBodyNode->getOrientation().getYaw(), Ogre::Vector3::UNIT_Y)*oculus->getOrientation();
 	Ogre::Vector3 view(-qView.zAxis());
@@ -447,11 +453,6 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 	Ogre::Vector3 xzPoint = pos - view*(pos.y/(view.y-0.05f))*0.35f;
 	xzPoint.y = 0.05f;
 	cursor->setPosition(xzPoint);
-	targetWPName = Game::getInstance().highlightClosestWP(cursor->getPosition());
-	// 2nd: process the input and derive the GAME's state
-	if (Game::getInstance().isRunning() && closestWP != -1) {
-		Game::getInstance().frameEventQueued(closestWP);
-	}
 	
 	return true;
 }
@@ -519,13 +520,6 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 		testAn = !testAn;
 	} else if (arg.key == OIS::KC_I) {
 		
-		/* Code to reinitiate game with the robot driving the the initWP */
-		//~ rosieActionClient->waitForServer();
-		//~ topological_navigation::GotoNodeGoal goal;
-		//~ goal.target = Game::getInstance().getInitWP();
-		//~ rosieActionClient->cancelAllGoals();
-		//~ rosieActionClient->sendGoal(goal);
-		//~ LogManager::getSingletonPtr()->logMessage("Send2InitNode: " + goal.target);
 		testAn = false;
 		changX = 0;
 		changY = 0;
@@ -545,6 +539,37 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 		changZ = changZ + 0.01;
 	} else if (arg.key == OIS::KC_T) {
 		changZ = changZ - 0.01;
+	} 
+	
+	// FLC orders
+	else if (arg.key == OIS::KC_W) {
+		fbSpeed = 1.0;
+		moving = true;
+		if(lrSpeed != 0) {
+			fbSpeed = fbSpeed / sqrt(2);
+			lrSpeed = lrSpeed / sqrt(2);		}
+		
+	} else if (arg.key == OIS::KC_S) {
+		fbSpeed = -1.0;
+		moving = true;
+		if(lrSpeed != 0) {
+			fbSpeed = fbSpeed / sqrt(2);
+			lrSpeed = lrSpeed / sqrt(2);		}
+			
+	} else if (arg.key == OIS::KC_A) {
+		lrSpeed = -1.0;
+		moving = true;
+		if(fbSpeed != 0) {
+			fbSpeed = fbSpeed / sqrt(2);
+			lrSpeed = lrSpeed / sqrt(2);		}
+			
+	} else if (arg.key == OIS::KC_D) {
+		lrSpeed = 1.0;
+		moving = true;
+		if(fbSpeed != 0) {
+			fbSpeed = fbSpeed / sqrt(2);
+			lrSpeed = lrSpeed / sqrt(2);		}
+			
 	}
 
 	mPlayer->injectKeyDown(arg);
@@ -554,6 +579,36 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 bool BaseApplication::keyReleased( const OIS::KeyEvent &arg )
 {
   mPlayer->injectKeyUp(arg);
+  
+  if (arg.key == OIS::KC_W) {
+		fbSpeed = 0.0;
+		if(lrSpeed != 0) {
+			lrSpeed = lrSpeed * sqrt(2);		
+		} else {
+			moving = false;		}
+		
+	} else if (arg.key == OIS::KC_S) {
+		fbSpeed = 0.0;
+		if(lrSpeed != 0) {
+			lrSpeed = lrSpeed * sqrt(2);			
+		} else {
+			moving = false;		}
+			
+	} else if (arg.key == OIS::KC_A) {
+		lrSpeed = 0.0;
+		if(fbSpeed != 0) {
+			fbSpeed = fbSpeed * sqrt(2);			
+		} else {
+			moving = false;		}
+			
+	} else if (arg.key == OIS::KC_D) {
+		lrSpeed = 0.0;
+		if(fbSpeed != 0) {
+			fbSpeed = fbSpeed * sqrt(2);			
+		} else {
+			moving = false;		}
+			
+	}
   return true;
 }
  
@@ -565,7 +620,7 @@ bool BaseApplication::mouseMoved( const OIS::MouseEvent &arg )
  
 bool BaseApplication::mousePressed( const OIS::MouseEvent &arg, OIS::MouseButtonID id )
 {
-	sendNavigationTarget();
+	//sendNavigationTarget();
     if (mTrayMgr->injectMouseDown(arg, id)) return true;
 	return true;
 }
@@ -576,18 +631,7 @@ bool BaseApplication::mouseReleased( const OIS::MouseEvent &arg, OIS::MouseButto
 	return true;
 }
 
-void BaseApplication::sendNavigationTarget() {
-	if (targetWPName != Ogre::StringUtil::BLANK && NULL != rosieActionClient) {
-			Game::getInstance().placePersistentMarker(targetWPName);
-			rosieActionClient->waitForServer();
-			topological_navigation::GotoNodeGoal goal;
-			goal.target = targetWPName;
-			rosieActionClient->cancelAllGoals();
-			rosieActionClient->sendGoal(goal);
-			LogManager::getSingletonPtr()->logMessage("SendGoal: " + targetWPName);
-			//~ LogManager::getSingletonPtr()->logMessage("!!!I am not sending any goals right now!!!");
-		}
-}
+
  
 void BaseApplication::windowResized(Ogre::RenderWindow* rw)
 {
@@ -719,7 +763,26 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 *  in order to end up in the correct orientation...
 			 */
 				//tfListener->lookupTransform("camera_left", "camera_right", depthImg->header.stamp, vdTransform);
-				tfListener->lookupTransform("camera_left", "camera_right", ros::Time(0), vdTransform);
+				
+				/**tfListener->lookupTransform("map", "camera_right", ros::Time(0), vdTransform);
+				// positioning
+				
+				vdPosR.x = -vdTransform.getOrigin().x();
+				vdPosR.y = -vdTransform.getOrigin().y();
+				vdPosR.z = -vdTransform.getOrigin().z();
+				
+				
+				// rotation 
+				tf::Matrix3x3 tfMat(vdTransform.getBasis());
+				tf::Vector3 row0(tfMat.getRow(0)), row1(tfMat.getRow(1)), row2(tfMat.getRow(2));
+				Matrix3 rot(row0.x(),row0.y(),row0.z(),row1.x(),row1.y(),row1.z(),row2.x(),row2.y(),row2.z());
+				Quaternion quat(rot);
+				
+				vdOriR = quat;*/
+				
+				
+				
+				 tfListener->lookupTransform("camera_left", "camera_right", ros::Time(0), vdTransform);
 				// positioning 
 				if(!testAn){
 				vdPosR.x = -vdTransform.getOrigin().x();
@@ -785,22 +848,22 @@ void BaseApplication::joyCallback(const sensor_msgs::Joy::ConstPtr &joy ) {
 	if (l_button0 == false && joy->buttons[0] != 0 && takeSnapshot == false) {
 		// request recording of a Snapshot
 		//~ takeSnapshot = true;
-		sendNavigationTarget();
+		//sendNavigationTarget();
 	}
 	else if (l_button1 == false && joy->buttons[1] != 0) {
 		// make all manually taken Snapshots invisible (effectively you can record a second set of images)
 		//~ snLib->flipVisibility();
-		sendNavigationTarget();
+		//sendNavigationTarget();
 	}
 	else if (l_button2 == false && joy->buttons[2] != 0) {
 		// make all room sweep Snapshots invisible (effectively you can record a second set of images)
 		//~ rsLib->flipVisibility();
-		sendNavigationTarget();
+		//sendNavigationTarget();
 	}
 	else if (l_button3 == false && joy->buttons[3] != 0) {
 		// trigger a room sweep
 		//~ boost::thread tmpThread(boost::bind(&BaseApplication::triggerPanoramaPTUScan, this));
-		sendNavigationTarget();
+		//sendNavigationTarget();
 	}
 	else if (l_button5 == false && joy->buttons[5] != 0) {
 		// switch between first person and free viewpoint
@@ -847,48 +910,6 @@ void BaseApplication::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& map) 
 	mapArrived = true;
 }
 
-void BaseApplication::topoNodesCB(const visualization_msgs::InteractiveMarkerInit::ConstPtr& data){
-	// get exclusive access for the GAME in order to reset the waypoint parameters
-	boost::recursive_mutex::scoped_lock lock(GAME_MUTEX);
-
-	for (int i=0;i<data->markers.size();i++) {
-		WayPoint *wp = Game::getInstance().getWPByName(data->markers[i].name);
-		if (wp) {
-			wp->setPosition(Vector3(-data->markers[i].pose.position.y,
-				data->markers[i].pose.position.z,
-				-data->markers[i].pose.position.x));
-			Quaternion wpRot(data->markers[i].pose.orientation.w,
-				-data->markers[i].pose.orientation.y,
-				data->markers[i].pose.orientation.z,
-				-data->markers[i].pose.orientation.x);
-			if (wpRot != Quaternion::ZERO) {
-				wp->setOrientation(wpRot);
-			}
-			
-			wp->setVisible(true);
-			Ogre::LogManager::getSingletonPtr()->logMessage(wp->toString() + " arrived.");
-		} else {
-			cerr << "Inexistant WayPoint transmittet by ROS." << endl;
-		}
-	}
-	
-	hRosSubNodes->shutdown();
-	//~ Game::getInstance().print();
-	receivedWPs = true;	
-}
-
-void BaseApplication::closestWayPointCB(const std_msgs::String::ConstPtr& data) {
-	// get the waypoint of the robot
-	std::string name(data->data);
-	if (name.substr(0,8).compare("WayPoint") == 0) {
-		closestWP = boost::lexical_cast<int>(name.erase(0,8)); //Erase string "WayPoint" before casting
-	} else {
-		std::cout << "Node unknown:" << name << std::endl;
-		closestWP = -1;
-	}
-}
-
-
 
 void BaseApplication::initROS() {
   int argc = 0;
@@ -907,17 +928,6 @@ void BaseApplication::initROS() {
   hRosSubMap = new ros::Subscriber(hRosNode->subscribe<nav_msgs::OccupancyGrid>
 				("/map", 1, boost::bind(&BaseApplication::mapCallback, this, _1)));
 
-  /* Subscription for the waypoints */
-  hRosSubNodes = new ros::Subscriber(hRosNode->subscribe<visualization_msgs::InteractiveMarkerInit>
-                ("/kth_floorsix_y2_topo_markers/update_full", 1, boost::bind(&BaseApplication::topoNodesCB, this, _1)));
-
-  /* Subscription for the closest WP / current WP */
-  hRosSubCloseWP = new ros::Subscriber(hRosNode->subscribe<std_msgs::String>
-                ("/current_node", 1, boost::bind(&BaseApplication::closestWayPointCB, this, _1)));
-
-///////////////////////// CARLOS ///////////////////
-
-
   hRosSubRGBVidL = new message_filters::Subscriber<sensor_msgs::CompressedImage>
 				(*hRosNode, "/camera1/rgb/image/compressed", 1);
   hRosSubDepthVidL = new message_filters::Subscriber<sensor_msgs::CompressedImage>
@@ -928,9 +938,6 @@ void BaseApplication::initROS() {
   hRosSubDepthVidR = new message_filters::Subscriber<sensor_msgs::CompressedImage>
 				(*hRosNode, "/camera2/depth/image_raw/compressedDepth", 1);
 
-
-///////////////////////// CARLOS ///////////////////----------------------------------------------------------------------
-
   rosVideoSyncL = new message_filters::Synchronizer<ApproximateTimePolicy>
 				(ApproximateTimePolicy(15), *hRosSubDepthVidL, *hRosSubRGBVidL);
   rosVideoSyncL->registerCallback(boost::bind(&BaseApplication::syncVideoCallback, this, _1, _2, true));
@@ -940,9 +947,7 @@ void BaseApplication::initROS() {
   rosVideoSyncR->registerCallback(boost::bind(&BaseApplication::syncVideoCallback, this, _1, _2, false));
 
   
-	/* Setting up the tfListener, action clients and initialize the AsyncSpinner */
-  //~ rosPTUClient = new Client("ptu_pan_tilt_metric_map", true);
-  rosieActionClient = new actionlib::SimpleActionClient<topological_navigation::GotoNodeAction>("topological_navigation", true);
+  /* Setting up the tfListener */
   tfListener = new tf::TransformListener();
   
   /* AsyncSpinner to process msgs. in a separate thread (param =!= 1) */
@@ -1001,14 +1006,6 @@ void BaseApplication::destroyROS() {
     delete hRosSubDepth;
     hRosSubDepth = NULL;
   }
-  if (hRosSubNodes) {
-    delete hRosSubNodes;
-    hRosSubNodes = NULL;
-  }
-  if (hRosSubCloseWP) {
-    delete hRosSubCloseWP;
-    hRosSubCloseWP = NULL;
-  }
   if (hRosNode) {
     delete hRosNode;
     hRosNode = NULL;
@@ -1016,9 +1013,5 @@ void BaseApplication::destroyROS() {
   if (rosPTUClient) {
 	delete rosPTUClient;
 	rosPTUClient = NULL;
-  }
-  if (rosieActionClient) {
-	  delete rosieActionClient;
-	  rosieActionClient = NULL;
   }
 }

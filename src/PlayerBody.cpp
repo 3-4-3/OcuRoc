@@ -134,7 +134,11 @@ void PlayerBody::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 	mStereoCameraParent->yaw(Ogre::Radian(Ogre::Real(-turnY*dt)));
 }
 
-void PlayerBody::frameRenderingQueued(Robot *robot) {
+/** 
+ * 	Method called in every iteration in case we are in 1st person camera
+ * 	
+ */ 
+void PlayerBody::frameRenderingQueued(Robot *robot, bool movement) {
 	// Place the player on the robot's position.
 	// The quaternion is needed due to the coordinates of the robot avatar mesh
 	// (The mesh coordinates could be corrected with blender to match the Ogre coords, in order to avoid the transforms)
@@ -147,13 +151,10 @@ void PlayerBody::frameRenderingQueued(Robot *robot) {
 	mStereoCameraParent->setPosition(Ogre::Vector3::UNIT_Y*HEIGHT_FROM_FLOOR+robot->getSceneNode()->_getDerivedPosition()
 											);
     
-    /*if (offset > 0) {
-		mStereoCameraParent->setOrientation(rOffset*qRot*robot->getSceneNode()->getOrientation());
-	} else if (offset < 0) {
-		mStereoCameraParent->setOrientation(lOffset*qRot*robot->getSceneNode()->getOrientation());
-	} else {
-		mStereoCameraParent->setOrientation(qRot*robot->getSceneNode()->getOrientation());
-    }*/
+    if(movement) {
+		integrated_turn -= robot->yaw_difference;
+	}
+    
     integrated_turn -= turnY*2;
     Ogre::Quaternion q(Ogre::Degree(integrated_turn), Ogre::Vector3::UNIT_Y);
     mStereoCameraParent->setOrientation(q*qRot*robot->getSceneNode()->getOrientation());

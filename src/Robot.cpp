@@ -40,11 +40,14 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 		orientation.FromRotationMatrix(mRot);
 		orientation = qYn90*orientation;*/
 		
+		// Save previous yaw
+		Ogre::Radian previous_yaw = robot->getOrientation().getYaw();
 		
 		// positioning
 		translation.x = baseTF.getOrigin().x();
 		translation.y = -baseTF.getOrigin().y();
 		translation.z = -baseTF.getOrigin().z();
+		
 		// rotation (at least get it into global coords that are fixed on the robot)
 		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);
 		mRot.FromEulerAnglesYXZ(Radian(yaw),Radian(0.0f),Radian(0.0f));
@@ -53,7 +56,8 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 		robot->setPosition(translation);
         robot->setOrientation(orientation);
         
-        
+        // Yaw difference
+        yaw_difference = (previous_yaw - robot->getOrientation().getYaw()) .valueRadians();
         
 		/** // positioning
 				
@@ -72,7 +76,7 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
         robot->setOrientation(orientation); */
         
         
-        std::cout << " ROBOT roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
+        // std::cout << " ROBOT roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
         
 		
 		

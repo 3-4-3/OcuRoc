@@ -79,8 +79,13 @@ class PlayerBody {
   /**< ROS: Process an incomming joystick message from ROS. This combines the various events from the OIS system by processing the entire joystick state.*/
   void frameRenderingQueued(const Ogre::FrameEvent& evt);
   /**< Given a Ogre::FrameEvent, apply all commands that result from the various inputs.*/
-  void frameRenderingQueued(Robot *robot);
-  /**< Given a Robot, update the player position to the robot's posititon. This effectively is the first-person mode.*/
+    
+  /**< Given a Robot, update the player position to the robot's posititon. This effectively is the first-person mode.
+   * 	In case the robot moves we need to update de yaw to keep looking into the same direction.
+   */
+  void frameRenderingQueued(Robot *robot, bool movement);
+
+  
   void toggleFirstPersonMode();
   /**< Mark the PlayerBody to run in first-person or free-view mode. Note that this will just set the boolean flag - the behaviour change is achieved by calling different frameRenderingQueued methods.*/
   bool isFirstPerson();

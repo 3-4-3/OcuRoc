@@ -100,8 +100,6 @@ This source file is part of the
 #include "SnapshotLibrary.h"
 #include "Video3D.h"
 #include "GlobalMap.h"
-#include "WayPoint.h"
-#include "Game.h"
 
 /** typedef for the synchronized message handling (ROS) */
 typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::CompressedImage, sensor_msgs::CompressedImage> ApproximateTimePolicy;
@@ -127,6 +125,7 @@ public:
  
 	virtual void go(void);
 	/**< Start the application (reimplemented in Roculus.cpp). */
+
  
 protected:
 	virtual bool setup();
@@ -180,13 +179,6 @@ protected:
 	color transformation of the rgb image and mapping of the camera transformation into Ogre coordinates. Signalizes the arrival of a video update with a boolean flag. */
 
 
-	// Callbacks added for the demo game:
-	virtual void topoNodesCB(const visualization_msgs::InteractiveMarkerInit::ConstPtr& );
-	/**< Receive the waypoint markers from ROS, extract and set the required parameters for the Game. */
-	virtual void closestWayPointCB(const std_msgs::String::ConstPtr& );
-	/**< Update the closest waypoint (or current waypoint) the Robot is located at. */
-	void sendNavigationTarget();
-	/**< Utility method to clear all robot task and send a new target WayPoint to the robot.*/
  
 	//Adjust mouse clipping area
 	virtual void windowResized(Ogre::RenderWindow* rw);	
@@ -226,9 +218,7 @@ protected:
 	ros::AsyncSpinner* hRosSpinner;			/**< ROS AsyncSpinner, will start the message handling in a separate thread. */
 	ros::NodeHandle* hRosNode;				/**< ROS node handle, necessary to run this application as a ros node. */
     ros::Subscriber *hRosSubJoy,			/**< Subscriber for the joystick topic. */
-					*hRosSubMap,			/**< Subscriber for the map topic. */
-					*hRosSubNodes,			/**< Subscriber for the waypoints. */
-					*hRosSubCloseWP;		/**< Subscriber for the closest/actual waypoint. */
+					*hRosSubMap;			/**< Subscriber for the map topic. */
     ros::Publisher  *hRosPubAngle;			/**< Publisher for the angle of the robot		*/
 
 
@@ -260,19 +250,21 @@ protected:
 	volatile bool 	syncedUpdate,	/**< Flag to communicate the arrival of a (synchronized) image update between message and rendering thread (room sweep). */
 					videoUpdateL, videoUpdateR,	/**< Flag to communicate the arrival of a (synchronized) image update between message and rendering thread (video stream). */
 					takeSnapshot,	/**< Indicator that a snapshot is requested. */
-					mapArrived,		/**< Flag to communicate the arrival of the map between message and rendering thread. */
-					receivedWPs;	/**< Flag to communicate the arrival of the waypoints between message and rendering thread. */
+					mapArrived;		/**< Flag to communicate the arrival of the map between message and rendering thread. */
+					
 	
 	// for the game	
 	SceneNode* cursor;			/**< Added for the Game. Holds the cursor, which is projected onto the ground from the Oculus Rift position and orientation. */
-	WayPoint* selectedWP;		/**< The currently selected waypoint. */
-	Ogre::String targetWPName;	/**< The name of the waypoint that was selected as a navigation target. */
-	int closestWP; 				/**< ID of the closest waypoint (or current waypoint, depending on the subscription). */
-	actionlib::SimpleActionClient<topological_navigation::GotoNodeAction> *rosieActionClient; /**< Client for the communication of navigation targets. */
 	boost::recursive_mutex GAME_MUTEX;	/**< Mutex to block collision between incomming waypoint update and rendering thread accessing GAME parameters. */
 
 	// Added for Mac compatibility
 	Ogre::String m_ResourcePath;	/**< Additional path variable for Mac compatibility. */
+	
+	// boolean that tells the robot is moving (FLC feature)	
+	bool moving;
+	
+	// FLC orders
+	double fbSpeed, lrSpeed;
  
 #ifdef OGRE_STATIC_LIB
 	Ogre::StaticPluginLoader m_StaticPluginLoader; /**< Static Plugin Loader. (Ogre default). */
