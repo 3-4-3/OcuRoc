@@ -71,7 +71,9 @@ BaseApplication::BaseApplication(void)
 	  rosMsgSync(NULL),
 	  rosPTUClient(NULL),
 	  ptuSweep(NULL),
-	  globalMap(NULL)
+	  globalMap(NULL),
+	  fbSpeed(0), 
+	  lrSpeed(0)
 {
 #if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
     m_ResourcePath = Ogre::macBundlePath() + "/Contents/Resources/";
@@ -171,7 +173,7 @@ void BaseApplication::createFrameListener(void)
 	items.push_back("Filtering");
 	items.push_back("Poly Mode");
 	items.push_back("Yaw");
-	items.push_back("GameState");
+	items.push_back("Angle");
  
 	mDetailsPanel = mTrayMgr->createParamsPanel(OgreBites::TL_NONE, "DetailsPanel", 250, items);
 	mDetailsPanel->setParamValue(4, "vertexColors.material");
@@ -347,8 +349,8 @@ bool BaseApplication::frameStarted(const Ogre::FrameEvent& evt)
 
 	
 		
-	std::cout << "vidupdL: " << videoUpdateL << std::endl;
-	std::cout << "vidupdR: " << videoUpdateR << std::endl;
+	// std::cout << "vidupdL: " << videoUpdateL << std::endl;
+	// std::cout << "vidupdR: " << videoUpdateR << std::endl;
 	
 	// update video node if necessary
 	if (videoUpdateL) {
@@ -435,12 +437,13 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 		}
 		
 		mDetailsPanel->setParamValue(7, Ogre::StringConverter::toString(angle_f));
+		//mDetailsPanel->setParamValue(7, Ogre::StringConverter::toString(moving));
 	}
 	
 	// FLC orders, in case we are in 1st person
 	if (mPlayer->isFirstPerson()) {
 		
-		
+		f_l_controller->moveRobot(fbSpeed, lrSpeed, angle_f);
 		
 	}
 
@@ -668,15 +671,15 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 	/* Receive a depth-rgb pair of images, filter and convert them into the Ogre format and fetch the according transformation
 	 * in order to complete a valid Snapshot */
 	 
-	std::cout << "syncCamera " << is_left << std::endl;
+	// std::cout << "syncCamera " << is_left << std::endl;
 
 	 // used for the coordinate tranformation from ROS to Ogre
 	static tfScalar yaw,pitch,roll;
 	static tf::StampedTransform vdTransform;
 	static Ogre::Matrix3 mRot;
 
-	std::cout << "videoUpdateR: " << videoUpdateR << " - condition is: " << (!videoUpdateR && !is_left)<< std::endl;
-	std::cout << "whole cond: " <<	((!videoUpdateL && is_left) || (!videoUpdateR && !is_left)) << std::endl;
+	// std::cout << "videoUpdateR: " << videoUpdateR << " - condition is: " << (!videoUpdateR && !is_left)<< std::endl;
+	// std::cout << "whole cond: " <<	((!videoUpdateL && is_left) || (!videoUpdateR && !is_left)) << std::endl;
 	 // Only if the last update was rendered
 	if ((!videoUpdateL && is_left) || (!videoUpdateR && !is_left)) {			
 		try {
@@ -736,9 +739,9 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				depVideoL.loadDynamicImage(static_cast<uchar*>(cv_depth_l.data), cv_depth_l.cols, cv_depth_l.rows, 1, Ogre::PF_L16);
 				texVideoL.loadDynamicImage(static_cast<uchar*>(cv_rgb_l.data), cv_rgb_l.cols, cv_rgb_l.rows, 1, Ogre::PF_BYTE_RGB);
 				videoUpdateL = true;
-				std::cout << "UPDATE LEFT" << std::endl;
-				std::cout << " vdPosR.x " << vdPosR.x << " vdPosR.y " << vdPosR.y <<  " vdPosR.z " << vdPosR.z<< std::endl;
-				std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
+				// std::cout << "UPDATE LEFT" << std::endl;
+				//std::cout << " vdPosR.x " << vdPosR.x << " vdPosR.y " << vdPosR.y <<  " vdPosR.z " << vdPosR.z<< std::endl;
+				//std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
 			} else {
 				// We have to cut away the compression header to load the depth image into openCV
 			compressed_depth_image_transport::ConfigHeader compressionConfig;
@@ -807,9 +810,9 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				depVideoR.loadDynamicImage(static_cast<uchar*>(cv_depth_r.data), cv_depth_r.cols, cv_depth_r.rows, 1, Ogre::PF_L16);
 				texVideoR.loadDynamicImage(static_cast<uchar*>(cv_rgb_r.data), cv_rgb_r.cols, cv_rgb_r.rows, 1, Ogre::PF_BYTE_RGB);
 				videoUpdateR = true;
-				std::cout << "UPDATE RIGHT" << std::endl;
+				//std::cout << "UPDATE RIGHT" << std::endl;
 				
-				std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
+				//std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
 			}
 			
 			
@@ -917,6 +920,8 @@ void BaseApplication::initROS() {
   ros::init(argc, argv, "roculus");
   hRosNode = new ros::NodeHandle();
 
+  f_l_controller = new FLC();
+
   /* Publish the angle of the robot */
   hRosPubAngle = new ros::Publisher(hRosNode->advertise<std_msgs::Float32>("angle", 5));
   
@@ -1015,3 +1020,4 @@ void BaseApplication::destroyROS() {
 	rosPTUClient = NULL;
   }
 }
+

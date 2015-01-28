@@ -15,7 +15,8 @@ PlayerBody::PlayerBody(Ogre::SceneNode* mStereoCameraParent)
     turnY(0.0f),
     firstPerson(false),
     quad(Ogre::Quaternion::IDENTITY),
-    offset(0)
+    offset(0),
+    hold(false)
 {
   this->mStereoCameraParent = mStereoCameraParent;
 }
@@ -150,14 +151,27 @@ void PlayerBody::frameRenderingQueued(Robot *robot, bool movement) {
 	//mStereoCameraParent->setPosition(Ogre::Vector3::UNIT_Y*HEIGHT_FROM_FLOOR+robot->getSceneNode()->getPosition());
 	mStereoCameraParent->setPosition(Ogre::Vector3::UNIT_Y*HEIGHT_FROM_FLOOR+robot->getSceneNode()->_getDerivedPosition()
 											);
-    
-    if(movement) {
-		integrated_turn -= robot->yaw_difference;
+    if(!hold) {
+		integrated_turn -= turnY*2;
+		Ogre::Quaternion q(Ogre::Degree(integrated_turn), Ogre::Vector3::UNIT_Y);
+		mStereoCameraParent->setOrientation(q*qRot*robot->getSceneNode()->getOrientation());
+		
+		
+		if(movement) {
+			yaw_dir = mStereoCameraParent->getOrientation().getYaw().valueDegrees();
+			hold = true;
+		}
+	} else {
+		yaw_dir -= turnY*2;
+		Ogre::Quaternion q(Ogre::Degree(yaw_dir), Ogre::Vector3::UNIT_Y);
+		mStereoCameraParent->setOrientation(q);
+		
+		if(!movement) {
+			hold = false;
+			integrated_turn = yaw_dir - (qRot*robot->getSceneNode()->getOrientation()).getYaw().valueDegrees();
+		}
 	}
     
-    integrated_turn -= turnY*2;
-    Ogre::Quaternion q(Ogre::Degree(integrated_turn), Ogre::Vector3::UNIT_Y);
-    mStereoCameraParent->setOrientation(q*qRot*robot->getSceneNode()->getOrientation());
 }
 
 void PlayerBody::injectROSJoy( const sensor_msgs::Joy::ConstPtr &joy ) {

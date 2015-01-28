@@ -26,6 +26,11 @@
  */
 class PlayerBody {
  private:
+ 
+ 
+  double yaw_dir;				// The absolute direction that the player camera has when the robot is being moved
+  bool hold;				// The robot is moving (player is holding the move button)
+  
   Ogre::Vector3 position,	/**< Position of the player.*/
 				velo;		/**< Velocity of the movement.*/
   float 	maxSpeed,		/**< Maximum velocity.*/

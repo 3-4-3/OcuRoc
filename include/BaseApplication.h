@@ -68,6 +68,7 @@ This source file is part of the
 #include "OgreOculus.h"
 #include "PlayerBody.h"
 #include "Robot.h"
+#include "FLC.h"
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>			// Input handling
 #include <std_msgs/Float32.h>		// Output message
@@ -265,6 +266,7 @@ protected:
 	
 	// FLC orders
 	double fbSpeed, lrSpeed;
+	FLC *f_l_controller;
  
 #ifdef OGRE_STATIC_LIB
 	Ogre::StaticPluginLoader m_StaticPluginLoader; /**< Static Plugin Loader. (Ogre default). */
@@ -272,3 +274,4 @@ protected:
 };
  
 #endif // #ifndef __BaseApplication_h_
+

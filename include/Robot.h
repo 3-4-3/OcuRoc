@@ -12,7 +12,7 @@
 class Robot {
 public:
 	/**  Yaw difference between Yaw in t and Yaw in t-1 (t=now) */
-	double yaw_difference;
+	///double yaw_difference;
 
 	Robot(Ogre::SceneManager*, Ogre::SceneNode*);
 	/**< Set up the avatar and prepare the scene.*/
