@@ -8,7 +8,7 @@ Video3D::Video3D(Ogre::Entity *pSnapshot, Ogre::SceneNode *pSceneNode, const Ogr
 	// basically remember these things for later
 	this->snapshot = pSnapshot;
 	this->targetSceneNode = pSceneNode;
-	if(is_left)  // carlos
+	///if(is_left)  // carlos
 	this->targetSceneNode->setInheritOrientation(false); 
 	this->depthTexture = depthTexture;
 	this->rgbTexture = rgbTexture;
@@ -26,7 +26,7 @@ Video3D::~Video3D() {
 
 bool Video3D::update(const Ogre::Image &depth, const Ogre::Image &rgb, const Ogre::Vector3 &pos, const Ogre::Quaternion &orientation) {
 	// copy the image buffers to the texture buffers (considering the PixelFormat, make sure they match for maximum speed!)
-	std::cout << "RGB POINTER: " << &rgb << std::endl ;
+	//std::cout << "RGB POINTER: " << &rgb << std::endl ;
 	
 	depthTexture->getBuffer()->blitFromMemory(depth.getPixelBox());
 	rgbTexture->getBuffer()->blitFromMemory(rgb.getPixelBox());
@@ -34,8 +34,9 @@ bool Video3D::update(const Ogre::Image &depth, const Ogre::Image &rgb, const Ogr
 	// update scene node and do some transformation magic
 	targetSceneNode->setPosition(pos);
 	targetSceneNode->setOrientation(orientation);
+	
 	//targetSceneNode->roll(Ogre::Degree(-90));
-	//targetSceneNode->yaw(Ogre::Degree(90));
+	targetSceneNode->pitch(Ogre::Degree(180));
 	
 	// attach this node on the first method call
 	if (!attached) {

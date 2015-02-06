@@ -33,6 +33,7 @@ using namespace std;
 // TEST RELATIVE POS CAMERAS
 bool testAn(false);
 double changX(0),changY(0),changZ(0);
+#define	OFFSET_Z -0.3;
  
 //-------------------------------------------------------------------------------------
 BaseApplication::BaseApplication(void)
@@ -715,15 +716,20 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				tfListener->lookupTransform("map", "camera_left", ros::Time(0), vdTransform);
 				// positioning
 				
-				vdPosL.x = -vdTransform.getOrigin().x();
-				vdPosL.y = -vdTransform.getOrigin().y();
-				vdPosL.z = -vdTransform.getOrigin().z();
+				///vdPosL.x = -vdTransform.getOrigin().x();
+				///vdPosL.y = -vdTransform.getOrigin().y();
+				///vdPosL.z = vdTransform.getOrigin().z();
+				
+				vdPosL.x = vdTransform.getOrigin().x();
+				vdPosL.y = vdTransform.getOrigin().y();
+				vdPosL.z = vdTransform.getOrigin().z();
 				
 				
 				// rotation 
 				tf::Matrix3x3 tfMat(vdTransform.getBasis());
 				tf::Vector3 row0(tfMat.getRow(0)), row1(tfMat.getRow(1)), row2(tfMat.getRow(2));
 				Matrix3 rot(row0.x(),row0.y(),row0.z(),row1.x(),row1.y(),row1.z(),row2.x(),row2.y(),row2.z());
+				//Matrix3 rot(row0.x(),row1.x(),row2.x(),row0.y(),row1.y(),row2.y(),row0.z(),row1.z(),row2.z());
 				Quaternion quat(rot);
 				
 				vdOriL = quat;
@@ -765,15 +771,22 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 *  unfortunately there is still some magic going on in Video3D.cpp and Snapshot.cpp
 			 *  in order to end up in the correct orientation...
 			 */
-				//tfListener->lookupTransform("camera_left", "camera_right", depthImg->header.stamp, vdTransform);
+			 /// USING LAUNCH (doesn't work)
+				///tfListener->lookupTransform("camera_left", "camera_right", depthImg->header.stamp, vdTransform);
 				
-				/**tfListener->lookupTransform("map", "camera_right", ros::Time(0), vdTransform);
+				tfListener->lookupTransform("map", "camera_right", ros::Time(0), vdTransform);
 				// positioning
 				
-				vdPosR.x = -vdTransform.getOrigin().x();
-				vdPosR.y = -vdTransform.getOrigin().y();
-				vdPosR.z = -vdTransform.getOrigin().z();
+				vdPosR.x = vdTransform.getOrigin().x()+changX;
+				vdPosR.y = vdTransform.getOrigin().y()+changY;
+				vdPosR.z = vdTransform.getOrigin().z()+changZ;
 				
+				///vdPosR.x = vdTransform.getOrigin().x();
+				///vdPosR.y = -vdTransform.getOrigin().y();
+				///vdPosR.z = -vdTransform.getOrigin().z();
+				
+				
+				//tfListener->lookupTransform("map", "camera_right", depthImg->header.stamp, vdTransform);
 				
 				// rotation 
 				tf::Matrix3x3 tfMat(vdTransform.getBasis());
@@ -781,16 +794,27 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				Matrix3 rot(row0.x(),row0.y(),row0.z(),row1.x(),row1.y(),row1.z(),row2.x(),row2.y(),row2.z());
 				Quaternion quat(rot);
 				
-				vdOriR = quat;*/
+				vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
+				mRot.FromEulerAnglesYXZ(Radian(changX),Radian(changY),Radian(changZ));
+				//mRot.FromEulerAnglesYXZ(Radian(-pitch),Radian(roll),Radian(-yaw));
+				Quaternion q(mRot);
+				
+				vdOriR = quat;
+				
+				///vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
+				///mRot.FromEulerAnglesYXZ(Radian(-yaw),Radian(0.0f),Radian(0.0f));
+				///vdOriR.FromRotationMatrix(mRot);
 				
 				
+				/// END
 				
-				 tfListener->lookupTransform("camera_left", "camera_right", ros::Time(0), vdTransform);
+				/// USING CALIBRATION (works)
+				/* tfListener->lookupTransform("camera_left", "camera_right", ros::Time(0), vdTransform);
 				// positioning 
 				if(!testAn){
 				vdPosR.x = -vdTransform.getOrigin().x();
 				vdPosR.y = -vdTransform.getOrigin().y();
-				vdPosR.z = vdTransform.getOrigin().z();
+				vdPosR.z = vdTransform.getOrigin().z() + OFFSET_Z;
 				}else{
 				vdPosR.x = changX;
 				vdPosR.y = changY;
@@ -802,7 +826,9 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				//mRot.FromEulerAnglesXYZ(-Radian(roll),Radian(pitch),Radian(yaw));
 				//else
 				mRot.FromEulerAnglesXYZ(-Radian(roll),Radian(pitch),Radian(yaw));
-				vdOriR.FromRotationMatrix(mRot);
+				vdOriR.FromRotationMatrix(mRot);*/
+				/// END
+				
 
 				/* connect the data to the images, note that this does in fact not load, but store pointers instead
 				 * which is why the cv_depth and cv_rgb are members of BaseApplication to prevent data loss
@@ -812,7 +838,10 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				videoUpdateR = true;
 				//std::cout << "UPDATE RIGHT" << std::endl;
 				
-				//std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
+				std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
+				std::cout << " changX " << changX << " changY " << changY <<  " changZ " << changZ<< std::endl;
+				/**std::cout << " -vdTransform.getOrigin().x() " << -vdTransform.getOrigin().x() << " -vdTransform.getOrigin().y() " 
+				<< -vdTransform.getOrigin().y() <<  " vdTransform.getOrigin().z() " << vdTransform.getOrigin().z() << std::endl;*/
 			}
 			
 			
