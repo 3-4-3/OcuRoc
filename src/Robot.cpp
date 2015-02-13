@@ -48,6 +48,8 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 		translation.y = -baseTF.getOrigin().y();
 		translation.z = -baseTF.getOrigin().z();
 		
+		tfListener->lookupTransform("mean_global","marker",ros::Time(0), baseTF); //////////////////// carlos
+		
 		// rotation (at least get it into global coords that are fixed on the robot)
 		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);
 		mRot.FromEulerAnglesYXZ(Radian(yaw),Radian(0.0f),Radian(0.0f));

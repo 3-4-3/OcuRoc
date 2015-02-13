@@ -3,7 +3,8 @@
 #include "std_msgs/Float32.h"
 #include <math.h>
 #include <sstream>
-
+#include "geometry_msgs/Twist.h"
+#include "geometry_msgs/Vector3.h"
 
 
 class FLC 
@@ -29,5 +30,7 @@ protected:
 	ros::Publisher *fbVel_pub;   		// Forward Speed
   	ros::Publisher *lrVel_pub;   		// Right/left Speed
   	ros::Publisher *rotVel_pub; 		// Rotational speed
+  	
+  	ros::Publisher *ubot_pub; 		// Rotational speed
 
 };

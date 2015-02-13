@@ -103,7 +103,9 @@ This source file is part of the
 #include "GlobalMap.h"
 
 /** typedef for the synchronized message handling (ROS) */
-typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::CompressedImage, sensor_msgs::CompressedImage> ApproximateTimePolicy;
+// message_filters::sync_policies::ApproximateTime<sensor_msgs::CompressedImage, sensor_msgs::CompressedImage> ApproximateTimePolicy;
+typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::CompressedImage, sensor_msgs::CompressedImage, 
+							sensor_msgs::CompressedImage, sensor_msgs::CompressedImage> ApproximateTimePolicy;
 
 /** typedef for the Pan-Tilt-Unit control on the robot */
 typedef actionlib::SimpleActionClient<scitos_ptu::PanTiltAction> Client;
@@ -175,6 +177,10 @@ protected:
 	virtual void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& );
 	/**< Receive the 2D ground map and make it available for rendering. Unpacks the msg. stores it in the corresponding Ogre::Image, unsubscribes from the topic and sets the flag for map arrival. */
 	//~ virtual void syncCallback(const sensor_msgs::CompressedImageConstPtr&, const sensor_msgs::CompressedImageConstPtr&);  	/**< Synchronized message processing for the room-sweeps. */
+	
+	virtual void syncTwoCams(const sensor_msgs::CompressedImageConstPtr&, const sensor_msgs::CompressedImageConstPtr&, 
+									const sensor_msgs::CompressedImageConstPtr&, const sensor_msgs::CompressedImageConstPtr&);
+	/**< Synchronized message processing for the depth-rgb messages of both cams */
 	virtual void syncVideoCallback(const sensor_msgs::CompressedImageConstPtr&, const sensor_msgs::CompressedImageConstPtr&, bool is_left);
 	/**< Synchronized message processing for the depth-rgb messages of the video-stream (used for snapshots as well). Smoothing of the arrived depth image, 
 	color transformation of the rgb image and mapping of the camera transformation into Ogre coordinates. Signalizes the arrival of a video update with a boolean flag. */
@@ -229,7 +235,8 @@ protected:
 																*hRosSubRGBVidL, *hRosSubRGBVidR,		/**< Message filtering to be able to synchronize the image streams. */
 																*hRosSubDepthVidL, *hRosSubDepthVidR;	/**< Message filtering to be able to synchronize the image streams. */
 	message_filters::Synchronizer<ApproximateTimePolicy> *rosMsgSync,		/**< Synchronization of the room sweep images. */								
-															*rosVideoSyncL, *rosVideoSyncR;		/**< Synchronization of the video image streams. */
+															*rosVideoSyncL, *rosVideoSyncR,
+															*rosVideoSync;		/**< Synchronization of the video image streams. */
 	tf::TransformListener *tfListener;		/**< Keeps track of all coordinate frames. Enables application to compute arbitrary transformations between ROS coordinate frames (see frames.pdf). */
 	Robot *robotModel;						/**< Display and manage the robot avatar. */
 	GlobalMap *globalMap;					/**< Display and manage the global map. */

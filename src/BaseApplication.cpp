@@ -668,6 +668,15 @@ void BaseApplication::windowClosed(Ogre::RenderWindow* rw)
 	
 }
 
+
+void BaseApplication::syncTwoCams(const sensor_msgs::CompressedImageConstPtr& depthImgLeft, const sensor_msgs::CompressedImageConstPtr& rgbImgLeft, 
+									const sensor_msgs::CompressedImageConstPtr& depthImgRight, const sensor_msgs::CompressedImageConstPtr& rgbImgRight) {
+										
+		syncVideoCallback(depthImgLeft, rgbImgLeft, true);
+		syncVideoCallback(depthImgRight, rgbImgRight, false);
+										
+}
+
 void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstPtr& depthImg, const sensor_msgs::CompressedImageConstPtr& rgbImg, bool is_left) {
 	/* Receive a depth-rgb pair of images, filter and convert them into the Ogre format and fetch the according transformation
 	 * in order to complete a valid Snapshot */
@@ -971,14 +980,18 @@ void BaseApplication::initROS() {
 				(*hRosNode, "/camera2/rgb/image/compressed", 1);
   hRosSubDepthVidR = new message_filters::Subscriber<sensor_msgs::CompressedImage>
 				(*hRosNode, "/camera2/depth/image_raw/compressedDepth", 1);
+				
+  rosVideoSync = new message_filters::Synchronizer<ApproximateTimePolicy>
+				(ApproximateTimePolicy(15), *hRosSubDepthVidL, *hRosSubRGBVidL, *hRosSubDepthVidR, *hRosSubRGBVidR);
+  rosVideoSync->registerCallback(boost::bind(&BaseApplication::syncTwoCams, this, _1, _2, _3, _4));
 
-  rosVideoSyncL = new message_filters::Synchronizer<ApproximateTimePolicy>
+  /*rosVideoSyncL = new message_filters::Synchronizer<ApproximateTimePolicy>
 				(ApproximateTimePolicy(15), *hRosSubDepthVidL, *hRosSubRGBVidL);
   rosVideoSyncL->registerCallback(boost::bind(&BaseApplication::syncVideoCallback, this, _1, _2, true));
 
   rosVideoSyncR = new message_filters::Synchronizer<ApproximateTimePolicy>
 				(ApproximateTimePolicy(15), *hRosSubDepthVidR, *hRosSubRGBVidR);
-  rosVideoSyncR->registerCallback(boost::bind(&BaseApplication::syncVideoCallback, this, _1, _2, false));
+  rosVideoSyncR->registerCallback(boost::bind(&BaseApplication::syncVideoCallback, this, _1, _2, false));*/
 
   
   /* Setting up the tfListener */
