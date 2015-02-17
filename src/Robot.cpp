@@ -28,7 +28,7 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 	
 	// get the latest robot position and orientation, transform them to Ogre and update the scene node	
 	try {
-		tfListener->lookupTransform("camera_left","marker",ros::Time(0), baseTF); //////////////////// carlos
+		tfListener->lookupTransform("camera_left","you_bot",ros::Time(0), baseTF); //////////////////// carlos
 		//tfListener->lookupTransform("map","marker",ros::Time(0), baseTF); //////////////////// carlos
 		
 		/*translation.x = -baseTF.getOrigin().y();
@@ -48,7 +48,7 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 		translation.y = -baseTF.getOrigin().y();
 		translation.z = -baseTF.getOrigin().z();
 		
-		tfListener->lookupTransform("mean_global","marker",ros::Time(0), baseTF); //////////////////// carlos
+		tfListener->lookupTransform("mean_global","you_bot",ros::Time(0), baseTF); //////////////////// carlos
 		
 		// rotation (at least get it into global coords that are fixed on the robot)
 		baseTF.getBasis().getEulerYPR(yaw,pitch,roll);

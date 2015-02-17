@@ -415,7 +415,7 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 	// Publish the angle that has the view compared to the robot 
 	std_msgs::Float32 angle;
 	float angle_f = (oculus->getOrientation().getYaw() + mPlayerBodyNode->getOrientation().getYaw() - robotModel->getSceneNode()->getOrientation().getYaw())
-									.valueRadians();
+									.valueRadians() - M_PI/2;
 	angle.data = angle_f;
 	hRosPubAngle->publish(angle);
 	
@@ -561,14 +561,14 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 			lrSpeed = lrSpeed / sqrt(2);		}
 			
 	} else if (arg.key == OIS::KC_A) {
-		lrSpeed = -1.0;
+		lrSpeed = 1.0;
 		moving = true;
 		if(fbSpeed != 0) {
 			fbSpeed = fbSpeed / sqrt(2);
 			lrSpeed = lrSpeed / sqrt(2);		}
 			
 	} else if (arg.key == OIS::KC_D) {
-		lrSpeed = 1.0;
+		lrSpeed = -1.0;
 		moving = true;
 		if(fbSpeed != 0) {
 			fbSpeed = fbSpeed / sqrt(2);

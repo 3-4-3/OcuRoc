@@ -1,7 +1,7 @@
 #include "FLC.h"
 
 
-#define MAX_SPEED 0.2
+#define MAX_SPEED 0.1
 #define PI 3.1415
 
 FLC::FLC(void)
