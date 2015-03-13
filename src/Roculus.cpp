@@ -167,27 +167,84 @@ void Roculus::createScene(void)
 	mPCRender->end();
 	mPCRender->convertToMesh("CoordSystem");
 	
-	// create a circle as cursor 
+	
+	// create an arrow that indicates next objective
 	mPCRender= mSceneMgr->createManualObject();
-	mPCRender->begin("roculus3D/BlankMaterial", Ogre::RenderOperation::OT_LINE_STRIP);
-		float const radius = 0.3;
+	mPCRender->begin("roculus3D/BlankMaterial", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+		float const radius = 0.005;
 		float const accuracy = 35; 
+		float const max_altitude = 0.6;
+		float const min_altitude = 0.5;
+		
+		float const radius2 = 0.02;
+		float const pyramid_base_altitude = 0.53;
+		float const corner_altitude = 0.46;
+		
+		// CILINDER
 		unsigned point_index = 0;
 		for(float theta = 0; theta <= 2 * Math::PI; theta += Math::PI / accuracy) {
-			mPCRender->position(radius * cos(theta), 0.15f, radius * sin(theta));
-			mPCRender->colour(Ogre::ColourValue(0.0f, 1.0f, 0.0f, 1.0f));
-			mPCRender->index(point_index++);
+			mPCRender->position(radius * cos(theta), min_altitude, radius * sin(theta));
+			mPCRender->colour(Ogre::ColourValue(1.0f, 0.5f, 0.0f, 0.2f));
+			
+			mPCRender->position(radius * cos(theta), max_altitude, radius * sin(theta));
+			mPCRender->colour(Ogre::ColourValue(1.0f, 0.5f, 0.0f, 0.2f));
+			
+			point_index++;
 		}
-		mPCRender->index(0); // Rejoins the last point to the first.
+		
+		// PYRAMID
+		double pyramid_index = 0;
+		for(float theta = 0; theta <= 2 * Math::PI; theta += Math::PI / accuracy) {
+			mPCRender->position(radius2 * cos(theta), pyramid_base_altitude, radius2 * sin(theta));
+			mPCRender->colour(Ogre::ColourValue(1.0f, 0.5f, 0.0f, 0.2f));
+			
+			pyramid_index++;
+		}
+		
+		double corner_index = point_index*2+pyramid_index;
+		mPCRender->position(0.0f, corner_altitude, 0.0f);
+		mPCRender->colour(Ogre::ColourValue(1.0f, 0.5f, 0.0f, 0.2f));
+		
+		while(pyramid_index>0) {
+			if(pyramid_index!=1) {
+			mPCRender->triangle(corner_index,point_index*2+pyramid_index-1,point_index*2+pyramid_index-2);
+			mPCRender->triangle(point_index*2+pyramid_index-1,corner_index,point_index*2+pyramid_index-2);
+			} else {
+			mPCRender->triangle(corner_index,point_index*2+pyramid_index-1,corner_index-1);
+			mPCRender->triangle(point_index*2+pyramid_index-1,corner_index,corner_index-1);
+			}
+			
+			pyramid_index--;
+		}
+		
+		
+		//CILINDER
+		mPCRender->triangle(0,1,point_index*2-1);
+		mPCRender->triangle(0,point_index*2-1,point_index*2-2);
+		
+		mPCRender->triangle(1,0,point_index*2-1);
+		mPCRender->triangle(point_index*2-1,0,point_index*2-2);
+		
+		point_index--;
+		while(point_index>0) {
+			mPCRender->triangle(point_index*2+1,point_index*2,point_index*2-1);
+			mPCRender->triangle(point_index*2,point_index*2+1,point_index*2-1);
+			
+			mPCRender->triangle(point_index*2-2,point_index*2,point_index*2-1);
+			mPCRender->triangle(point_index*2-1,point_index*2,point_index*2-2);
+			point_index--;
+		}
+		
 	mPCRender->end();
-	mPCRender->convertToMesh("CircleCursor");
+	mPCRender->convertToMesh("Objective");
+	
 
 	// construct an instance of the cursor with circle and transparent flagg
 	cursor = mSceneMgr->getRootSceneNode()->createChildSceneNode("CircleCursor");
-	cursor->attachObject(mSceneMgr->createEntity("CircleCursor"));
+	///cursor->attachObject(mSceneMgr->createEntity("CircleCursor"));
 	Ogre::Entity *wpMarker = mSceneMgr->createEntity("Cylinder.mesh");
 	wpMarker->setMaterialName("roculus3D/WayPointMarkerTransparent");
-	cursor->attachObject(wpMarker);
+	///cursor->attachObject(wpMarker);
 	
 	// set up the node for the video stream
 	// The right video node is child of the left
@@ -204,9 +261,9 @@ void Roculus::createScene(void)
 	  vdVideoRight = new Video3D(mSceneMgr->createEntity("CamGeometry"), mSceneMgr->getRootSceneNode()->createChildSceneNode(), pT_Depth2, pT_RGB2, false);
 	
 	/* Good for debugging: add some coordinate systems */
-	 vdVideoLeft->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
-	 vdVideoRight->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
-	 mSceneMgr->getRootSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
+	 ///vdVideoLeft->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
+	 ///vdVideoRight->getTargetSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
+	 ///mSceneMgr->getRootSceneNode()->attachObject(mSceneMgr->createEntity("CoordSystem"));
 	
 	// PREallocate and manage memory to load/record snapshots
 	snLib = new SnapshotLibrary(mSceneMgr, Ogre::String("CamGeometry"), Ogre::String("roculus3D/DynamicTextureMaterialSepia"), 10);

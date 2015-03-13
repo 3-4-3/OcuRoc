@@ -30,10 +30,7 @@ using namespace std;
 #endif
 
 
-// TEST RELATIVE POS CAMERAS
-bool testAn(false);
-double changX(0),changY(0),changZ(0);
-#define	OFFSET_Z -0.3;
+
  
 //-------------------------------------------------------------------------------------
 BaseApplication::BaseApplication(void)
@@ -45,6 +42,7 @@ BaseApplication::BaseApplication(void)
 	  mPluginsCfg(Ogre::StringUtil::BLANK),
 	  mTrayMgr(0),
 	  mDetailsPanel(0),
+	  mDetailsAppRace(0),
 	  mCursorWasVisible(false),
 	  mShutDown(false),
 	  mInputManager(0),
@@ -74,7 +72,11 @@ BaseApplication::BaseApplication(void)
 	  ptuSweep(NULL),
 	  globalMap(NULL),
 	  fbSpeed(0), 
-	  lrSpeed(0)
+	  lrSpeed(0),
+	  testAn(false),
+	  changX(0),
+	  changY(0),
+	  changZ(0)
 {
 #if OGRE_PLATFORM == OGRE_PLATFORM_APPLE
     m_ResourcePath = Ogre::macBundlePath() + "/Contents/Resources/";
@@ -180,6 +182,16 @@ void BaseApplication::createFrameListener(void)
 	mDetailsPanel->setParamValue(4, "vertexColors.material");
 	mDetailsPanel->setParamValue(5, "Solid (default)");
 	mDetailsPanel->hide();
+	
+	Ogre::StringVector items_app;
+	items_app.push_back("LAPS");
+	items_app.push_back("");
+	items_app.push_back("Time");
+	items_app.push_back("");
+	items_app.push_back("Checkpoint");
+	mDetailsAppRace = mTrayMgr->createParamsPanel(OgreBites::TL_NONE, "AppPanel", 250, items_app);
+	mDetailsAppRace->hide();
+	
  
 	// register at the Ogre root
 	mRoot->addFrameListener(this);
@@ -316,6 +328,11 @@ bool BaseApplication::setup(void)
 	
 	// get a SceneNode for the PlayerBody
 	mPlayerBodyNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("PlayerBodyNode");
+	
+	// scene node for the objective in the race app
+	objective = mSceneMgr->getRootSceneNode()->createChildSceneNode("objective");
+	objective->attachObject(mSceneMgr->createEntity("Objective"));
+	
 	// set up the Oculus Rift (and along with it cameras and viewports of the engine)
 	oculus = new Oculus();
 	oculus->setupOculus();
@@ -419,7 +436,22 @@ bool BaseApplication::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 	angle.data = angle_f;
 	hRosPubAngle->publish(angle);
 	
-	
+	app_race->step(tfListener);
+	// Update the app/race information
+	if(mDetailsAppRace->isVisible()) {
+		// Laps
+		mDetailsAppRace->setParamValue(0, Ogre::StringConverter::toString(app_race->getLaps())+"/"+Ogre::StringConverter::toString(NUMBER_LAPS));
+		// Time (with mm : ss format)
+		mDetailsAppRace->setParamValue(2, 
+		Ogre::StringConverter::toString(app_race->getTime()/600) + 
+		Ogre::StringConverter::toString((app_race->getTime()/60)%10) + 
+		" : " +
+		Ogre::StringConverter::toString((app_race->getTime()/10)%6) +
+		Ogre::StringConverter::toString(app_race->getTime()%10)
+		);
+		// Current check point
+		mDetailsAppRace->setParamValue(4, Ogre::StringConverter::toString(app_race->getCP()));
+	}
 	
 	// update the panel information
 	if (mDetailsPanel->isVisible()) {
@@ -494,6 +526,20 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 			mTrayMgr->removeWidgetFromTray(mDetailsPanel);
 			mDetailsPanel->hide();
 		}
+	} else if (arg.key == OIS::KC_F7)   // start app
+	{
+		if (mDetailsAppRace->getTrayLocation() == OgreBites::TL_NONE)
+		{
+			mTrayMgr->moveWidgetToTray(mDetailsAppRace, OgreBites::TL_TOPLEFT, 0);
+			mDetailsAppRace->show();
+			app_race -> start(tfListener);
+		}
+		else
+		{
+			mTrayMgr->removeWidgetFromTray(mDetailsAppRace);
+			mDetailsAppRace->hide();
+			objective->setVisible(false);
+		}
 	} else if (arg.key == OIS::KC_V) {
 		rsLib->flipVisibility();
 	}
@@ -521,27 +567,27 @@ bool BaseApplication::keyPressed( const OIS::KeyEvent &arg )
 	/* keys added for the GAME */
 	else if (arg.key == OIS::KC_SPACE) {
 		//sendNavigationTarget();
-		testAn = !testAn;
+		testAn = true;
 	} else if (arg.key == OIS::KC_I) {
 		
 		testAn = false;
-		changX = 0;
-		changY = 0;
-		changZ=0;
+		//changX = 0;
+		//changY = 0;
+		//changZ=0;
 		/* Reinitiate the GAME */ 
 		//Game::getInstance().startGameSession();
 		//escCounter = 0; /// carlos
-	} else if (arg.key == OIS::KC_U) {
+	} else if (arg.key == OIS::KC_U && testAn) {
 		changY = changY +0.01;
-	} else if (arg.key == OIS::KC_J) {
+	} else if (arg.key == OIS::KC_J && testAn) {
 		changY = changY -0.01;
-	} else if (arg.key == OIS::KC_H) {
+	} else if (arg.key == OIS::KC_H && testAn) {
 		changX = changX - 0.01;
-	} else if (arg.key == OIS::KC_K) {
+	} else if (arg.key == OIS::KC_K && testAn) {
 		changX = changX + 0.01;
-	} else if (arg.key == OIS::KC_Y) {
+	} else if (arg.key == OIS::KC_Y && testAn) {
 		changZ = changZ + 0.01;
-	} else if (arg.key == OIS::KC_T) {
+	} else if (arg.key == OIS::KC_T && testAn) {
 		changZ = changZ - 0.01;
 	} 
 	
@@ -722,13 +768,9 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 *  in order to end up in the correct orientation...
 			 */
 				//tfListener->lookupTransform("camera_left", "camera_left", depthImg->header.stamp, vdTransform);
-				tfListener->lookupTransform("map", "camera_left", ros::Time(0), vdTransform);
+				tfListener->lookupTransform("map", "cam_left", ros::Time(0), vdTransform);
+				
 				// positioning
-				
-				///vdPosL.x = -vdTransform.getOrigin().x();
-				///vdPosL.y = -vdTransform.getOrigin().y();
-				///vdPosL.z = vdTransform.getOrigin().z();
-				
 				vdPosL.x = vdTransform.getOrigin().x();
 				vdPosL.y = vdTransform.getOrigin().y();
 				vdPosL.z = vdTransform.getOrigin().z();
@@ -738,14 +780,9 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				tf::Matrix3x3 tfMat(vdTransform.getBasis());
 				tf::Vector3 row0(tfMat.getRow(0)), row1(tfMat.getRow(1)), row2(tfMat.getRow(2));
 				Matrix3 rot(row0.x(),row0.y(),row0.z(),row1.x(),row1.y(),row1.z(),row2.x(),row2.y(),row2.z());
-				//Matrix3 rot(row0.x(),row1.x(),row2.x(),row0.y(),row1.y(),row2.y(),row0.z(),row1.z(),row2.z());
 				Quaternion quat(rot);
 				
 				vdOriL = quat;
-				
-				/*vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
-				mRot.FromEulerAnglesXYZ(-Radian(pitch),Radian(yaw),-Radian(roll));
-				vdOriL.FromRotationMatrix(mRot);*/
 
 				
 				/* connect the data to the images, note that this does in fact not load, but store pointers instead
@@ -754,9 +791,6 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				depVideoL.loadDynamicImage(static_cast<uchar*>(cv_depth_l.data), cv_depth_l.cols, cv_depth_l.rows, 1, Ogre::PF_L16);
 				texVideoL.loadDynamicImage(static_cast<uchar*>(cv_rgb_l.data), cv_rgb_l.cols, cv_rgb_l.rows, 1, Ogre::PF_BYTE_RGB);
 				videoUpdateL = true;
-				// std::cout << "UPDATE LEFT" << std::endl;
-				//std::cout << " vdPosR.x " << vdPosR.x << " vdPosR.y " << vdPosR.y <<  " vdPosR.z " << vdPosR.z<< std::endl;
-				//std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
 			} else {
 				// We have to cut away the compression header to load the depth image into openCV
 			compressed_depth_image_transport::ConfigHeader compressionConfig;
@@ -780,19 +814,13 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 			 *  unfortunately there is still some magic going on in Video3D.cpp and Snapshot.cpp
 			 *  in order to end up in the correct orientation...
 			 */
-			 /// USING LAUNCH (doesn't work)
-				///tfListener->lookupTransform("camera_left", "camera_right", depthImg->header.stamp, vdTransform);
 				
-				tfListener->lookupTransform("map", "camera_right", ros::Time(0), vdTransform);
+				tfListener->lookupTransform("map", "cam_right", ros::Time(0), vdTransform);
 				// positioning
 				
 				vdPosR.x = vdTransform.getOrigin().x()+changX;
 				vdPosR.y = vdTransform.getOrigin().y()+changY;
 				vdPosR.z = vdTransform.getOrigin().z()+changZ;
-				
-				///vdPosR.x = vdTransform.getOrigin().x();
-				///vdPosR.y = -vdTransform.getOrigin().y();
-				///vdPosR.z = -vdTransform.getOrigin().z();
 				
 				
 				//tfListener->lookupTransform("map", "camera_right", depthImg->header.stamp, vdTransform);
@@ -803,16 +831,8 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				Matrix3 rot(row0.x(),row0.y(),row0.z(),row1.x(),row1.y(),row1.z(),row2.x(),row2.y(),row2.z());
 				Quaternion quat(rot);
 				
-				vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
-				mRot.FromEulerAnglesYXZ(Radian(changX),Radian(changY),Radian(changZ));
-				//mRot.FromEulerAnglesYXZ(Radian(-pitch),Radian(roll),Radian(-yaw));
-				Quaternion q(mRot);
-				
 				vdOriR = quat;
 				
-				///vdTransform.getBasis().getEulerYPR(yaw,pitch,roll);
-				///mRot.FromEulerAnglesYXZ(Radian(-yaw),Radian(0.0f),Radian(0.0f));
-				///vdOriR.FromRotationMatrix(mRot);
 				
 				
 				/// END
@@ -845,11 +865,10 @@ void BaseApplication::syncVideoCallback(const sensor_msgs::CompressedImageConstP
 				depVideoR.loadDynamicImage(static_cast<uchar*>(cv_depth_r.data), cv_depth_r.cols, cv_depth_r.rows, 1, Ogre::PF_L16);
 				texVideoR.loadDynamicImage(static_cast<uchar*>(cv_rgb_r.data), cv_rgb_r.cols, cv_rgb_r.rows, 1, Ogre::PF_BYTE_RGB);
 				videoUpdateR = true;
-				//std::cout << "UPDATE RIGHT" << std::endl;
 				
-				std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
+				/**std::cout << " roll " << roll << " pitch " << pitch <<  " yaw " << yaw<< std::endl;
 				std::cout << " changX " << changX << " changY " << changY <<  " changZ " << changZ<< std::endl;
-				/**std::cout << " -vdTransform.getOrigin().x() " << -vdTransform.getOrigin().x() << " -vdTransform.getOrigin().y() " 
+				std::cout << " -vdTransform.getOrigin().x() " << -vdTransform.getOrigin().x() << " -vdTransform.getOrigin().y() " 
 				<< -vdTransform.getOrigin().y() <<  " vdTransform.getOrigin().z() " << vdTransform.getOrigin().z() << std::endl;*/
 			}
 			
@@ -958,7 +977,8 @@ void BaseApplication::initROS() {
   ros::init(argc, argv, "roculus");
   hRosNode = new ros::NodeHandle();
 
-  f_l_controller = new FLC();
+  f_l_controller 	= new FLC();
+  app_race			= new App(mSceneMgr, objective);
 
   /* Publish the angle of the robot */
   hRosPubAngle = new ros::Publisher(hRosNode->advertise<std_msgs::Float32>("angle", 5));

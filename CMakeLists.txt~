@@ -132,7 +132,7 @@ add_executable(roculus_node src/PlayerBody.cpp
        src/Video3D.cpp
         src/GlobalMap.cpp
 		 src/FLC.cpp
-		  src/App.cpp
+			src/App.cpp
 )
 
 add_executable(joy_remap src/JoystickRemapper.cpp)

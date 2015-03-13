@@ -129,6 +129,8 @@ material roculus3D/BlankMaterial
 		pass
 		{
 			lighting off
+
+			scene_blend alpha_blend
 		}
 	}
 }

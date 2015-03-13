@@ -101,6 +101,7 @@ This source file is part of the
 #include "SnapshotLibrary.h"
 #include "Video3D.h"
 #include "GlobalMap.h"
+#include "App.h"
 
 /** typedef for the synchronized message handling (ROS) */
 // message_filters::sync_policies::ApproximateTime<sensor_msgs::CompressedImage, sensor_msgs::CompressedImage> ApproximateTimePolicy;
@@ -206,6 +207,8 @@ protected:
 	OgreBites::InputContext mInputContext;	/**< Registers the inputs from OIS. */
 	OgreBites::SdkTrayManager* mTrayMgr;	/**< The tray manager (for the panels). */
 	OgreBites::ParamsPanel* mDetailsPanel;  /**< Panel for the details. */
+	OgreBites::ParamsPanel* mDetailsAppRace;  /**< Panel for the app. */
+	
 	bool mCursorWasVisible;					/**< Was the cursor visible before the Dialog was shown. */
 	bool mShutDown;							/**< Shut down all systems (broadcasted by this flag). */
  
@@ -274,7 +277,17 @@ protected:
 	// FLC orders
 	double fbSpeed, lrSpeed;
 	FLC *f_l_controller;
- 
+	
+	// RACE APP
+	App *app_race;
+	Ogre::SceneNode *objective;
+	
+	// For improving relative position camera streams 
+	bool testAn;
+	double changX,changY,changZ;
+	//#define	OFFSET_Z -0.3;
+	
+	
 #ifdef OGRE_STATIC_LIB
 	Ogre::StaticPluginLoader m_StaticPluginLoader; /**< Static Plugin Loader. (Ogre default). */
 #endif

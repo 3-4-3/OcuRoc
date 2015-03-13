@@ -9,9 +9,9 @@ Robot::Robot(Ogre::SceneManager *mSceneMgr, Ogre::SceneNode *pSceneNode) {
 	//robot = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	robot = pSceneNode;
 	robot->setPosition(Ogre::Vector3(0.0f, 1.0f, 0.0f));
-	//robot->attachObject(mSceneMgr->createEntity("Rosie.mesh"));
 	/* Good for debugging: add some coordinate systems */
 	 robot->attachObject(mSceneMgr->createEntity("CoordSystem"));
+	 //robot->attachObject(mSceneMgr->createEntity("Objective"));
 				//robot->flipVisibility(); //////////////////// carlos
 }
 
@@ -28,7 +28,7 @@ void Robot::updateFrom(tf::TransformListener *tfListener) {
 	
 	// get the latest robot position and orientation, transform them to Ogre and update the scene node	
 	try {
-		tfListener->lookupTransform("camera_left","you_bot",ros::Time(0), baseTF); //////////////////// carlos
+		tfListener->lookupTransform("cam_left","you_bot",ros::Time(0), baseTF); //////////////////// carlos
 		//tfListener->lookupTransform("map","marker",ros::Time(0), baseTF); //////////////////// carlos
 		
 		/*translation.x = -baseTF.getOrigin().y();

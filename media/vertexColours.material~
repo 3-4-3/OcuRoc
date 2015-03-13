@@ -54,7 +54,7 @@ material roculus3D/DynamicTextureMaterial
 	}
 }
 
-material roculus3D/DynamicTextureMat
+material roculus3D/DynamicTextureMaterial2
 {
 	technique
 	{
@@ -69,14 +69,14 @@ material roculus3D/DynamicTextureMat
 				}
 				
 			texture_unit 0 {
-				texture VideoRGBTex
+				texture VideoRGBTexture2
 				tex_coord_set 0
 				colour_op replace
 				filtering trilinear
 			}
 			
 			texture_unit 1 {
-				texture VideoDepthTex
+				texture VideoDepthTexture2
 				tex_coord_set 0
 				tex_address_mode mirror
 				filtering bilinear
